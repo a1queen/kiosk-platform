@@ -1,0 +1,61 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Logi i zrzuty JVM ###
+*.log
+logs/
+hs_err_pid*
+replay_pid*
+
+### Środowisko i sekrety ###
+.env
+.env.local
+*.env
+docker-compose.override.yml
+
+### Systemowe (Windows / macOS) ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.AppleDouble
+.LSOverride
+
+### Narzędzia i pliki tymczasowe ###
+.gemini/
+.agents/
+*.swp
+*.bak
+*~
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
