@@ -7,13 +7,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -35,5 +33,10 @@ public class OrderController {
 
         log.info("Order created successfully with ID: {}, Location: {}", response.orderId(), location);
         return ResponseEntity.created(location).body(response);
+    }
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> getOrders (){
+        return ResponseEntity.ok(orderService.getOrders());
+
     }
 }

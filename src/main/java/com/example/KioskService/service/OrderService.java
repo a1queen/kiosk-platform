@@ -44,4 +44,9 @@ public class OrderService {
 
         return new OrderResponse(savedOrder);
     }
+
+
+    public List <OrderResponse> getOrders(){
+       return orderRepository.findAll().stream().map(OrderResponse::new).toList();
+    }
 }
