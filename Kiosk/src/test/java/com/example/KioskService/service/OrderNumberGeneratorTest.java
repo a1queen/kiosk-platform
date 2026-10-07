@@ -75,23 +75,23 @@ class OrderNumberGeneratorTest {
         int totalOrders = threadCount * ordersPerThread;
 
         Set<String> generatedNumbers = ConcurrentHashMap.newKeySet();
-        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
-        for (int i = 0; i < threadCount; i++) {
-            executor.submit(() -> {
-                try {
-                    for (int j = 0; j < ordersPerThread; j++) {
-                        generatedNumbers.add(generator.generate());
+        try (ExecutorService executor = Executors.newFixedThreadPool(threadCount)) {
+            for (int i = 0; i < threadCount; i++) {
+                executor.submit(() -> {
+                    try {
+                        for (int j = 0; j < ordersPerThread; j++) {
+                            generatedNumbers.add(generator.generate());
+                        }
+                    } finally {
+                        latch.countDown();
                     }
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
+                });
+            }
 
-        latch.await();
-        executor.shutdown();
+            latch.await();
+        }
 
         assertThat(generatedNumbers).hasSize(totalOrders);
     }

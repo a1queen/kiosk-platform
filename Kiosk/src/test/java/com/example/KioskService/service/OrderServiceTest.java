@@ -44,7 +44,7 @@ class OrderServiceTest {
 
     @Test
     @DisplayName("Should successfully place order, save it, publish Kafka event, and return OrderResponse")
-    void shouldSuccessfullyPlaceOrder() throws Exception {
+    void shouldSuccessfullyPlaceOrder() {
         // Given
         RequestedOrder.Item requestedItem1 = new RequestedOrder.Item("Burger", 2, List.of("No pickle"));
         RequestedOrder.Item requestedItem2 = new RequestedOrder.Item("Fries", 1, null);
@@ -77,9 +77,9 @@ class OrderServiceTest {
         assertThat(savedOrder.getOrderNumber()).isEqualTo("Z-001");
         assertThat(savedOrder.getTotalAmount()).isEqualTo(new BigDecimal("35.50"));
         assertThat(savedOrder.getItems()).hasSize(2);
-        assertThat(savedOrder.getItems().get(0).getProductName()).isEqualTo("Burger");
-        assertThat(savedOrder.getItems().get(0).getQuantity()).isEqualTo(2);
-        assertThat(savedOrder.getItems().get(0).getNotes()).containsExactly("No pickle");
+        assertThat(savedOrder.getItems().getFirst().getProductName()).isEqualTo("Burger");
+        assertThat(savedOrder.getItems().getFirst().getQuantity()).isEqualTo(2);
+        assertThat(savedOrder.getItems().getFirst().getNotes()).containsExactly("No pickle");
         assertThat(savedOrder.getItems().get(1).getProductName()).isEqualTo("Fries");
         assertThat(savedOrder.getItems().get(1).getQuantity()).isEqualTo(1);
         assertThat(savedOrder.getItems().get(1).getNotes()).isEmpty();

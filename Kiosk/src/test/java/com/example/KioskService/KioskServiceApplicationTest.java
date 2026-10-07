@@ -28,6 +28,7 @@ class KioskServiceApplicationTest {
 
     @Test
     @DisplayName("Should instantiate KioskServiceApplication")
+    @SuppressWarnings("InstantiationOfUtilityClass")
     void shouldInstantiateApplicationClass() {
         KioskServiceApplication application = new KioskServiceApplication();
         assertThat(application).isNotNull();

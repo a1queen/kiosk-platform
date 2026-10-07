@@ -70,7 +70,7 @@ class OrderTest {
                 .hasSameHashCodeAs(order2)
                 .isNotEqualTo(different)
                 .isNotEqualTo(null)
-                .isNotEqualTo("other object");
+                .isNotEqualTo(new Object());
 
         assertThat(order1.toString()).contains("Z-001", "20.00", "CREATED", "itemsCount=1");
     }

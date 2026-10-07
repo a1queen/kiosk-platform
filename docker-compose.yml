@@ -50,7 +50,7 @@ services:
       - kafka
 
   kiosk-service:
-    build: .
+    build: ./Kiosk
     container_name: kiosk-service
     ports:
       - "8080:8080"

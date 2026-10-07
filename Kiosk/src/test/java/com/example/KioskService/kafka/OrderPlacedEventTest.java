@@ -48,7 +48,7 @@ class OrderPlacedEventTest {
         assertThat(event.createdAt()).isEqualTo(order.getCreatedAt());
         assertThat(event.items()).hasSize(2);
 
-        OrderPlacedEvent.Item mappedItem1 = event.items().get(0);
+        OrderPlacedEvent.Item mappedItem1 = event.items().getFirst();
         assertThat(mappedItem1.productName()).isEqualTo("Cheeseburger");
         assertThat(mappedItem1.quantity()).isEqualTo(1);
         assertThat(mappedItem1.notes()).containsExactly("Extra cheese");
