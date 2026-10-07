@@ -112,7 +112,7 @@ class OrderItemTest {
                 .hasSameHashCodeAs(item2)
                 .isNotEqualTo(different)
                 .isNotEqualTo(null)
-                .isNotEqualTo("some string");
+                .isNotEqualTo(new Object());
 
         assertThat(item1.toString()).contains("Burger", "2", "No onion");
 

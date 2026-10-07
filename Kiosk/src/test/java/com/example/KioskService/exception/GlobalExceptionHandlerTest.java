@@ -12,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,10 +40,10 @@ class GlobalExceptionHandlerTest {
         assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(problemDetail.getTitle()).isEqualTo("Invalid Request Content");
         assertThat(problemDetail.getDetail()).isEqualTo("Request validation failed");
-        assertThat(problemDetail.getProperties()).containsKey("invalidFields");
+        assertThat(problemDetail.getProperties()).isNotNull().containsKey("invalidFields");
 
         @SuppressWarnings("unchecked")
-        Map<String, String> invalidFields = (Map<String, String>) problemDetail.getProperties().get("invalidFields");
+        Map<String, String> invalidFields = (Map<String, String>) Objects.requireNonNull(problemDetail.getProperties()).get("invalidFields");
         assertThat(invalidFields).containsEntry("totalAmount", "Total amount is required");
         assertThat(invalidFields).containsEntry("items", "Order must contain at least one item");
     }
