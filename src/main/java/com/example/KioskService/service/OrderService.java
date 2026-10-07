@@ -46,7 +46,7 @@ public class OrderService {
     }
 
 
-    public List <OrderResponse> getOrders(){
-       return orderRepository.findAll().stream().map(OrderResponse::new).toList();
+    public List<OrderResponse> getOrders() {
+        return orderRepository.findAll().stream().map(OrderResponse::new).toList();
     }
 }

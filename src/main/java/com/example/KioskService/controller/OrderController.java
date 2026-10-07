@@ -34,9 +34,9 @@ public class OrderController {
         log.info("Order created successfully with ID: {}, Location: {}", response.orderId(), location);
         return ResponseEntity.created(location).body(response);
     }
-    @GetMapping
-    public ResponseEntity<List<OrderResponse>> getOrders (){
-        return ResponseEntity.ok(orderService.getOrders());
 
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> getOrders() {
+        return ResponseEntity.ok(orderService.getOrders());
     }
 }
