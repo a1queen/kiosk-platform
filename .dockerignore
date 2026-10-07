@@ -1,7 +1,7 @@
-target/
+Kiosk/target/
 .git/
 .gitignore
 .idea/
 *.iml
-.mvn/
+Kiosk/.mvn/
 *.log
