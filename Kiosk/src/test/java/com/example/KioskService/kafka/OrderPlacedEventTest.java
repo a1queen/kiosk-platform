@@ -18,11 +18,13 @@ class OrderPlacedEventTest {
     @Test
     @DisplayName("Should create OrderPlacedEvent with canonical constructor")
     void shouldCreateWithCanonicalConstructor() {
+        UUID eventId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
         Instant now = Instant.now();
         OrderPlacedEvent.Item item = new OrderPlacedEvent.Item("Cola", 2, List.of("Ice"));
-        OrderPlacedEvent event = new OrderPlacedEvent(orderId, "Z-001", now, List.of(item));
+        OrderPlacedEvent event = new OrderPlacedEvent(eventId, orderId, "Z-001", now, List.of(item));
 
+        assertThat(event.eventId()).isEqualTo(eventId);
         assertThat(event.orderId()).isEqualTo(orderId);
         assertThat(event.orderNumber()).isEqualTo("Z-001");
         assertThat(event.createdAt()).isEqualTo(now);
@@ -43,6 +45,7 @@ class OrderPlacedEventTest {
 
         OrderPlacedEvent event = new OrderPlacedEvent(order);
 
+        assertThat(event.eventId()).isNotNull();
         assertThat(event.orderId()).isEqualTo(orderId);
         assertThat(event.orderNumber()).isEqualTo("Z-005");
         assertThat(event.createdAt()).isEqualTo(order.getCreatedAt());
@@ -63,6 +66,7 @@ class OrderPlacedEventTest {
     @DisplayName("Should verify equals, hashCode, and toString for OrderPlacedEvent and Item")
     void shouldVerifyEqualsHashCodeAndToString() {
         UUID id = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
         Instant now = Instant.now();
         OrderPlacedEvent.Item item1 = new OrderPlacedEvent.Item("Burger", 1, List.of("Spicy"));
         OrderPlacedEvent.Item item2 = new OrderPlacedEvent.Item("Burger", 1, List.of("Spicy"));
@@ -73,13 +77,13 @@ class OrderPlacedEventTest {
                 .isNotEqualTo(differentItem);
         assertThat(item1.toString()).contains("Burger", "1", "Spicy");
 
-        OrderPlacedEvent event1 = new OrderPlacedEvent(id, "Z-001", now, List.of(item1));
-        OrderPlacedEvent event2 = new OrderPlacedEvent(id, "Z-001", now, List.of(item2));
-        OrderPlacedEvent differentEvent = new OrderPlacedEvent(UUID.randomUUID(), "Z-002", now, List.of(differentItem));
+        OrderPlacedEvent event1 = new OrderPlacedEvent(eventId, id, "Z-001", now, List.of(item1));
+        OrderPlacedEvent event2 = new OrderPlacedEvent(eventId, id, "Z-001", now, List.of(item2));
+        OrderPlacedEvent differentEvent = new OrderPlacedEvent(UUID.randomUUID(), UUID.randomUUID(), "Z-002", now, List.of(differentItem));
 
         assertThat(event1).isEqualTo(event2)
                 .hasSameHashCodeAs(event2)
                 .isNotEqualTo(differentEvent);
-        assertThat(event1.toString()).contains(id.toString(), "Z-001");
+        assertThat(event1.toString()).contains(id.toString(), "Z-001", eventId.toString());
     }
 }

@@ -1,17 +1,22 @@
 package com.example.KioskService.controller;
 
 import com.example.KioskService.dto.OrderResponse;
-import com.example.KioskService.service.OrderService;
 import com.example.KioskService.dto.RequestedOrder;
+import com.example.KioskService.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -23,7 +28,7 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderResponse> sendOrder(@RequestBody @Valid RequestedOrder order) {
-        log.info("Received request to place order with {} items", order.items() != null ? order.items().size() : 0);
+        log.info("Received request to place order with {} items", order.items().size());
         OrderResponse response = orderService.placeOrder(order);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -36,7 +41,14 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> getOrders() {
-        return ResponseEntity.ok(orderService.getOrders());
+    public ResponseEntity<PagedModel<OrderResponse>> getOrders(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<OrderResponse> page = orderService.getOrders(pageable);
+        return ResponseEntity.ok(new PagedModel<>(page));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.getOrderById(id));
     }
 }

@@ -1,19 +1,39 @@
+server:
+  shutdown: graceful
+
 spring:
   application:
     name: kiosk-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  task:
+    scheduling:
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
+  data:
+    web:
+      pageable:
+        serialization-mode: via-dto
+        max-page-size: 50
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
       properties:
-        spring.json.add.type.headers: false
+        enable.idempotence: true
+        max.block.ms: 2000
+        request.timeout.ms: 2000
+        delivery.timeout.ms: 3000
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/kiosk_db}
     username: ${SPRING_DATASOURCE_USERNAME:kiosk_user}
     password: ${SPRING_DATASOURCE_PASSWORD:kiosk_password}
     driver-class-name: org.postgresql.Driver
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: true
@@ -22,4 +42,3 @@ spring:
         format_sql: true
   flyway:
     enabled: true
-    baseline-on-migrate: true

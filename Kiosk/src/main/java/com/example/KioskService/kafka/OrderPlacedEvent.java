@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record OrderPlacedEvent(
+        UUID eventId,
         UUID orderId,
         String orderNumber,
         Instant createdAt,
@@ -19,6 +20,7 @@ public record OrderPlacedEvent(
 
     public OrderPlacedEvent(Order order) {
         this(
+                UUID.randomUUID(),
                 order.getId(),
                 order.getOrderNumber(),
                 order.getCreatedAt(),
@@ -30,7 +32,7 @@ public record OrderPlacedEvent(
 
     public record Item(
             String productName,
-            int quantity,
+            Integer quantity,
             List<String> notes
     ) {
         public Item {

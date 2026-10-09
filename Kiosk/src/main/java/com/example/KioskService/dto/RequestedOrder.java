@@ -1,6 +1,5 @@
 package com.example.KioskService.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -17,15 +16,15 @@ public record RequestedOrder(
         BigDecimal totalAmount,
 
         @NotEmpty(message = "Order must contain at least one item")
-        @JsonProperty("items")
         List<@Valid Item> items
 ) {
     public record Item(
             @NotBlank(message = "Product name must not be blank")
             String productName,
 
+            @NotNull(message = "Quantity is required")
             @Positive(message = "Quantity must be greater than zero")
-            int quantity,
+            Integer quantity,
 
             List<String> notes
     ) {

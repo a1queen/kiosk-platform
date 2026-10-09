@@ -1,16 +1,17 @@
 package com.example.KioskService.model;
 
+import com.example.KioskService.exception.DomainValidationException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -39,10 +40,10 @@ public class OrderItem {
 
     public OrderItem(String productName, Integer quantity, List<String> notes) {
         if (productName == null || productName.isBlank()) {
-            throw new IllegalArgumentException("Product name must not be blank");
+            throw new DomainValidationException("Product name must not be blank");
         }
         if (quantity == null || quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero");
+            throw new DomainValidationException("Quantity must be greater than zero");
         }
 
         this.productName = productName;
@@ -61,21 +62,16 @@ public class OrderItem {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof OrderItem that)) return false;
-        if (id != null && that.id != null) {
-            return id.equals(that.id);
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) {
+            return false;
         }
-        return Objects.equals(productName, that.productName) &&
-                Objects.equals(quantity, that.quantity) &&
-                Objects.equals(notes, that.notes);
+        OrderItem other = (OrderItem) o;
+        return id != null && id.equals(other.getId());
     }
 
     @Override
     public int hashCode() {
-        if (id != null) {
-            return id.hashCode();
-        }
-        return Objects.hash(productName, quantity, notes);
+        return getClass().hashCode();
     }
 
     @Override
