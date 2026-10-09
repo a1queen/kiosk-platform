@@ -1,101 +1,123 @@
 package com.example.KioskService.exception;
 
-import com.example.KioskService.dto.RequestedOrder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
-import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
-    @SuppressWarnings("unused")
-    private void sampleControllerMethod(RequestedOrder order) {}
-
     @Test
-    @DisplayName("Should handle OrderNotFoundException and return 404 Not Found")
+    @DisplayName("Should handle OrderNotFoundException and return 404")
     void shouldHandleOrderNotFoundException() {
-        UUID orderId = UUID.randomUUID();
-        OrderNotFoundException ex = new OrderNotFoundException(orderId);
+        UUID id = UUID.randomUUID();
+        OrderNotFoundException ex = new OrderNotFoundException(id);
 
-        ProblemDetail problemDetail = handler.handleOrderNotFoundException(ex);
+        ProblemDetail result = handler.handleOrderNotFoundException(ex);
 
-        assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-        assertThat(problemDetail.getTitle()).isEqualTo("Order Not Found");
-        assertThat(problemDetail.getDetail()).isEqualTo("Order not found with ID: " + orderId);
-        assertThat(problemDetail.getType().toString()).isEqualTo("urn:problem-type:order-not-found");
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(result.getDetail()).isEqualTo("Order not found with ID: " + id);
+        assertThat(result.getTitle()).isEqualTo("Order Not Found");
+        assertThat(result.getType()).isEqualTo(URI.create("urn:problem-type:order-not-found"));
     }
 
     @Test
-    @DisplayName("Should handle MethodArgumentNotValidException and return 400 with field errors")
-    void shouldHandleMethodArgumentNotValidException() throws Exception {
-        RequestedOrder target = new RequestedOrder(null, null);
-        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "requestedOrder");
-        bindingResult.addError(new FieldError("requestedOrder", "totalAmount", "Total amount is required"));
-        bindingResult.addError(new FieldError("requestedOrder", "items", "Order must contain at least one item"));
+    @DisplayName("Should handle OrderStateException and return 409")
+    void shouldHandleOrderStateException() {
+        OrderStateException ex = new OrderStateException("Only orders with CREATED status can move to PREPARING");
 
-        Method method = getClass().getDeclaredMethod("sampleControllerMethod", RequestedOrder.class);
-        MethodParameter methodParameter = new MethodParameter(method, 0);
-        MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
+        ProblemDetail result = handler.handleOrderStateException(ex);
 
-        ProblemDetail problemDetail = handler.handleValidationException(ex);
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(result.getDetail()).isEqualTo("Only orders with CREATED status can move to PREPARING");
+        assertThat(result.getTitle()).isEqualTo("Conflict");
+        assertThat(result.getType()).isEqualTo(URI.create("urn:problem-type:conflict"));
+    }
 
-        assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-        assertThat(problemDetail.getTitle()).isEqualTo("Invalid Request Content");
-        assertThat(problemDetail.getDetail()).isEqualTo("Request validation failed");
-        assertThat(problemDetail.getProperties()).isNotNull().containsKey("invalidFields");
+    @Test
+    @DisplayName("Should handle DomainValidationException and return 400")
+    void shouldHandleDomainValidationException() {
+        DomainValidationException ex = new DomainValidationException("Invalid product name");
+
+        ProblemDetail result = handler.handleDomainValidationException(ex);
+
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(result.getDetail()).isEqualTo("Invalid product name");
+        assertThat(result.getTitle()).isEqualTo("Bad Request");
+        assertThat(result.getType()).isEqualTo(URI.create("urn:problem-type:bad-request"));
+    }
+
+    @Test
+    @DisplayName("Should handle HttpMessageNotReadableException and return 400")
+    void shouldHandleHttpMessageNotReadableException() {
+        HttpMessageNotReadableException ex = new HttpMessageNotReadableException("JSON parse error", new MockHttpInputMessage(new byte[0]));
+
+        ProblemDetail result = handler.handleHttpMessageNotReadableException(ex);
+
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(result.getDetail()).isEqualTo("Malformed JSON request or invalid data types");
+        assertThat(result.getTitle()).isEqualTo("Bad Request");
+        assertThat(result.getType()).isEqualTo(URI.create("urn:problem-type:bad-request"));
+    }
+
+    @Test
+    @DisplayName("Should handle MethodArgumentNotValidException and return 400 with invalidFields map")
+    void shouldHandleMethodArgumentNotValidException() {
+        BindingResult bindingResult = mock(BindingResult.class);
+        when(bindingResult.getErrorCount()).thenReturn(2);
+        
+        List<FieldError> fieldErrors = List.of(
+                new FieldError("orderRequest", "totalAmount", "Total amount must be greater than zero"),
+                new FieldError("orderRequest", "items", "Order must contain at least one item")
+        );
+        when(bindingResult.getFieldErrors()).thenReturn(fieldErrors);
+
+        MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
+        when(ex.getBindingResult()).thenReturn(bindingResult);
+
+        ProblemDetail result = handler.handleValidationException(ex);
+
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(result.getDetail()).isEqualTo("Request validation failed");
+        assertThat(result.getTitle()).isEqualTo("Invalid Request Content");
+        assertThat(result.getType()).isEqualTo(URI.create("urn:problem-type:validation-error"));
 
         @SuppressWarnings("unchecked")
-        Map<String, String> invalidFields = (Map<String, String>) Objects.requireNonNull(problemDetail.getProperties()).get("invalidFields");
-        assertThat(invalidFields).containsEntry("totalAmount", "Total amount is required");
-        assertThat(invalidFields).containsEntry("items", "Order must contain at least one item");
+        Map<String, String> invalidFields = (Map<String, String>) result.getProperties().get("invalidFields");
+        
+        assertThat(invalidFields)
+                .isNotNull()
+                .hasSize(2)
+                .containsEntry("totalAmount", "Total amount must be greater than zero")
+                .containsEntry("items", "Order must contain at least one item");
     }
 
     @Test
-    @DisplayName("Should handle IllegalArgumentException and return 400 Bad Request")
-    void shouldHandleIllegalArgumentException() {
-        IllegalArgumentException ex = new IllegalArgumentException("Invalid product name");
-
-        ProblemDetail problemDetail = handler.handleIllegalArgumentException(ex);
-
-        assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-        assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
-        assertThat(problemDetail.getDetail()).isEqualTo("Invalid product name");
-    }
-
-    @Test
-    @DisplayName("Should handle IllegalStateException and return 409 Conflict")
-    void shouldHandleIllegalStateException() {
-        IllegalStateException ex = new IllegalStateException("Only orders with CREATED status can move to PREPARING");
-
-        ProblemDetail problemDetail = handler.handleIllegalStateException(ex);
-
-        assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(problemDetail.getTitle()).isEqualTo("Conflict");
-        assertThat(problemDetail.getDetail()).isEqualTo("Only orders with CREATED status can move to PREPARING");
-    }
-
-    @Test
-    @DisplayName("Should handle generic Exception and return 500 Internal Server Error")
+    @DisplayName("Should handle Exception as 500 Internal Server Error")
     void shouldHandleGenericException() {
-        RuntimeException ex = new RuntimeException("Unexpected database failure");
+        Exception ex = new RuntimeException("Unexpected database failure");
 
-        ProblemDetail problemDetail = handler.handleGenericException(ex);
+        ProblemDetail result = handler.handleGenericException(ex);
 
-        assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        assertThat(problemDetail.getTitle()).isEqualTo("Internal Server Error");
-        assertThat(problemDetail.getDetail()).isEqualTo("An unexpected internal error occurred");
+        assertThat(result.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        assertThat(result.getDetail()).isEqualTo("An unexpected internal error occurred");
+        assertThat(result.getTitle()).isEqualTo("Internal Server Error");
+        assertThat(result.getType()).isEqualTo(URI.create("urn:problem-type:internal-server-error"));
     }
 }

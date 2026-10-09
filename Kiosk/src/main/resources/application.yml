@@ -1,13 +1,15 @@
 spring:
   application:
     name: kiosk-service
+  data:
+    web:
+      pageable:
+        serialization-mode: via-dto
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        spring.json.add.type.headers: false
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/kiosk_db}
     username: ${SPRING_DATASOURCE_USERNAME:kiosk_user}

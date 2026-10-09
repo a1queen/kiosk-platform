@@ -29,9 +29,7 @@ class ApplicationYamlTest {
         assertThat(properties.getProperty("spring.kafka.producer.key-serializer"))
                 .isEqualTo("org.apache.kafka.common.serialization.StringSerializer");
         assertThat(properties.getProperty("spring.kafka.producer.value-serializer"))
-                .isEqualTo("org.springframework.kafka.support.serializer.JsonSerializer");
-        assertThat(properties.getProperty("spring.kafka.producer.properties.spring.json.add.type.headers"))
-                .isEqualTo("false");
+                .isEqualTo("org.apache.kafka.common.serialization.StringSerializer");
 
         // Datasource properties
         assertThat(properties.getProperty("spring.datasource.url"))

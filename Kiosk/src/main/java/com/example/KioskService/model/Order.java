@@ -1,5 +1,7 @@
 package com.example.KioskService.model;
 
+import com.example.KioskService.exception.DomainValidationException;
+import com.example.KioskService.exception.OrderStateException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -43,13 +45,13 @@ public class Order {
 
     public Order(String orderNumber, BigDecimal totalAmount, List<OrderItem> items) {
         if (orderNumber == null || orderNumber.isBlank()) {
-            throw new IllegalArgumentException("Order number must not be blank");
+            throw new DomainValidationException("Order number must not be blank");
         }
         if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Total amount must be greater than zero");
+            throw new DomainValidationException("Total amount must be greater than zero");
         }
         if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("Order must contain at least one item");
+            throw new DomainValidationException("Order must contain at least one item");
         }
 
         this.orderNumber = orderNumber;
@@ -64,7 +66,7 @@ public class Order {
 
     public void addItem(OrderItem item) {
         if (item == null) {
-            throw new IllegalArgumentException("OrderItem must not be null");
+            throw new DomainValidationException("OrderItem must not be null");
         }
         this.items.add(item);
         item.setOrder(this);
@@ -72,14 +74,14 @@ public class Order {
 
     public void markAsPreparing() {
         if (this.status != OrderStatus.CREATED) {
-            throw new IllegalStateException("Only orders with CREATED status can move to PREPARING");
+            throw new OrderStateException("Only orders with CREATED status can move to PREPARING");
         }
         this.status = OrderStatus.PREPARING;
     }
 
     public void markAsCompleted() {
         if (this.status != OrderStatus.PREPARING) {
-            throw new IllegalStateException("Only orders with PREPARING status can move to COMPLETED");
+            throw new OrderStateException("Only orders with PREPARING status can move to COMPLETED");
         }
         this.status = OrderStatus.COMPLETED;
     }

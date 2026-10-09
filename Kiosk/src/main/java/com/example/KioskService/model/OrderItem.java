@@ -1,5 +1,6 @@
 package com.example.KioskService.model;
 
+import com.example.KioskService.exception.DomainValidationException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,10 +40,10 @@ public class OrderItem {
 
     public OrderItem(String productName, Integer quantity, List<String> notes) {
         if (productName == null || productName.isBlank()) {
-            throw new IllegalArgumentException("Product name must not be blank");
+            throw new DomainValidationException("Product name must not be blank");
         }
         if (quantity == null || quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero");
+            throw new DomainValidationException("Quantity must be greater than zero");
         }
 
         this.productName = productName;

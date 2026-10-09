@@ -1,5 +1,6 @@
 package com.example.KioskService.model;
 
+import com.example.KioskService.exception.DomainValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +25,7 @@ class OutboxEventTest {
     @DisplayName("Should throw exception when aggregateType is blank")
     void shouldThrowExceptionWhenAggregateTypeIsBlank() {
         assertThatThrownBy(() -> new OutboxEvent("", "123", "OrderPlacedEvent", "{}"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessage("Aggregate type must not be blank");
     }
 
@@ -32,7 +33,7 @@ class OutboxEventTest {
     @DisplayName("Should throw exception when aggregateId is blank")
     void shouldThrowExceptionWhenAggregateIdIsBlank() {
         assertThatThrownBy(() -> new OutboxEvent("Order", " ", "OrderPlacedEvent", "{}"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessage("Aggregate id must not be blank");
     }
 
@@ -40,7 +41,7 @@ class OutboxEventTest {
     @DisplayName("Should throw exception when eventType is blank")
     void shouldThrowExceptionWhenEventTypeIsBlank() {
         assertThatThrownBy(() -> new OutboxEvent("Order", "123", "", "{}"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessage("Event type must not be blank");
     }
 
@@ -48,7 +49,7 @@ class OutboxEventTest {
     @DisplayName("Should throw exception when payload is blank")
     void shouldThrowExceptionWhenPayloadIsBlank() {
         assertThatThrownBy(() -> new OutboxEvent("Order", "123", "OrderPlacedEvent", "  "))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DomainValidationException.class)
                 .hasMessage("Payload must not be blank");
     }
 }

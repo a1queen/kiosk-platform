@@ -1,5 +1,6 @@
 package com.example.KioskService.model;
 
+import com.example.KioskService.exception.DomainValidationException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,16 +41,16 @@ public class OutboxEvent {
 
     public OutboxEvent(String aggregateType, String aggregateId, String eventType, String payload) {
         if (aggregateType == null || aggregateType.isBlank()) {
-            throw new IllegalArgumentException("Aggregate type must not be blank");
+            throw new DomainValidationException("Aggregate type must not be blank");
         }
         if (aggregateId == null || aggregateId.isBlank()) {
-            throw new IllegalArgumentException("Aggregate id must not be blank");
+            throw new DomainValidationException("Aggregate id must not be blank");
         }
         if (eventType == null || eventType.isBlank()) {
-            throw new IllegalArgumentException("Event type must not be blank");
+            throw new DomainValidationException("Event type must not be blank");
         }
         if (payload == null || payload.isBlank()) {
-            throw new IllegalArgumentException("Payload must not be blank");
+            throw new DomainValidationException("Payload must not be blank");
         }
 
         this.aggregateType = aggregateType;
@@ -66,18 +67,12 @@ public class OutboxEvent {
         if (id != null && that.id != null) {
             return Objects.equals(id, that.id);
         }
-        return Objects.equals(aggregateType, that.aggregateType) &&
-                Objects.equals(aggregateId, that.aggregateId) &&
-                Objects.equals(eventType, that.eventType) &&
-                Objects.equals(createdAt, that.createdAt);
+        return false;
     }
 
     @Override
     public int hashCode() {
-        if (id != null) {
-            return Objects.hashCode(id);
-        }
-        return Objects.hash(aggregateType, aggregateId, eventType, createdAt);
+        return getClass().hashCode();
     }
 
     @Override

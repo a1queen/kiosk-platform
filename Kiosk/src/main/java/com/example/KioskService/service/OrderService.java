@@ -9,17 +9,17 @@ import com.example.KioskService.model.OrderItem;
 import com.example.KioskService.model.OutboxEvent;
 import com.example.KioskService.repository.OrderRepository;
 import com.example.KioskService.repository.OutboxEventRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,24 +29,26 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final OrderNumberGenerator orderNumberGenerator;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Transactional
-    public OrderResponse placeOrder(RequestedOrder requestedOrder) {
-        String generatedOrderNumber = orderNumberGenerator.generate();
-        log.info("Processing order placement with generated number: {}", generatedOrderNumber);
+    public OrderResponse placeOrder(RequestedOrder request) {
+        String nextOrderNumber = orderNumberGenerator.generate();
+        log.info("Processing order placement with generated number: {}", nextOrderNumber);
 
-        List<OrderItem> items = requestedOrder.items().stream()
-                .map(item -> new OrderItem(item.productName(), item.quantity(), item.notes()))
-                .toList();
+        Order newOrder = new Order(
+                nextOrderNumber,
+                request.totalAmount(),
+                request.items().stream()
+                        .map(dto -> new OrderItem(dto.productName(), dto.quantity(), dto.notes()))
+                        .collect(Collectors.toList())
+        );
 
-        Order order = new Order(generatedOrderNumber, requestedOrder.totalAmount(), items);
-
-        Order savedOrder = orderRepository.save(order);
+        Order savedOrder = orderRepository.save(newOrder);
         log.info("Order successfully persisted with ID: {} and number: {}", savedOrder.getId(), savedOrder.getOrderNumber());
 
-        OrderPlacedEvent event = new OrderPlacedEvent(savedOrder);
-        String payload = serializePayload(event);
+        OrderPlacedEvent eventPayload = new OrderPlacedEvent(savedOrder);
+        String payload = serializePayload(eventPayload);
 
         OutboxEvent outboxEvent = new OutboxEvent(
                 "ORDER",
@@ -62,18 +64,19 @@ public class OrderService {
 
     private String serializePayload(Object event) {
         try {
-            return objectMapper.writeValueAsString(event);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Failed to serialize outbox event payload", e);
+            return jsonMapper.writeValueAsString(event);
+        } catch (JacksonException e) {
+            throw new RuntimeException("Failed to serialize outbox event payload", e);
         }
     }
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getOrders(Pageable pageable) {
-        return orderRepository.findAllWithItems(pageable).map(OrderResponse::new);
+        return orderRepository.findAll(pageable).map(OrderResponse::new);
     }
+
     @Transactional(readOnly = true)
-    public OrderResponse getOrderById(UUID id){
-        return orderRepository.findByIdWithItems(id).map(OrderResponse::new).orElseThrow(() -> new OrderNotFoundException(id));
+    public OrderResponse getOrderById(UUID id) {
+        return orderRepository.findById(id).map(OrderResponse::new).orElseThrow(() -> new OrderNotFoundException(id));
     }
 }

@@ -3,6 +3,7 @@ package com.example.KioskService.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -53,9 +54,9 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleIllegalArgumentException(IllegalArgumentException ex) {
-        log.warn("Illegal argument error: {}", ex.getMessage());
+    @ExceptionHandler(DomainValidationException.class)
+    public ProblemDetail handleDomainValidationException(DomainValidationException ex) {
+        log.warn("Domain validation error: {}", ex.getMessage());
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
@@ -66,9 +67,9 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ProblemDetail handleIllegalStateException(IllegalStateException ex) {
-        log.warn("Illegal state conflict: {}", ex.getMessage());
+    @ExceptionHandler(OrderStateException.class)
+    public ProblemDetail handleOrderStateException(OrderStateException ex) {
+        log.warn("Order state conflict: {}", ex.getMessage());
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT,
@@ -76,6 +77,19 @@ public class GlobalExceptionHandler {
         );
         problemDetail.setTitle("Conflict");
         problemDetail.setType(URI.create("urn:problem-type:conflict"));
+        return problemDetail;
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        log.warn("Message not readable: {}", ex.getMessage());
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Malformed JSON request or invalid data types"
+        );
+        problemDetail.setTitle("Bad Request");
+        problemDetail.setType(URI.create("urn:problem-type:bad-request"));
         return problemDetail;
     }
 

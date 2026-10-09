@@ -2,8 +2,6 @@ package com.example.KioskService.service;
 
 import com.example.KioskService.model.OutboxEvent;
 import com.example.KioskService.repository.OutboxEventRepository;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -24,8 +22,7 @@ public class OutboxPublisher {
     private static final long KAFKA_ACK_TIMEOUT_SECONDS = 2;
 
     private final OutboxEventRepository outboxEventRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final ObjectMapper objectMapper;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Scheduled(fixedDelayString = "${app.outbox.poll-interval-ms:500}")
     @Transactional
@@ -37,8 +34,7 @@ public class OutboxPublisher {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                JsonNode payloadNode = objectMapper.readTree(event.getPayload());
-                kafkaTemplate.send(ORDERS_TOPIC, event.getAggregateId(), payloadNode)
+                kafkaTemplate.send(ORDERS_TOPIC, event.getAggregateId(), event.getPayload())
                         .get(KAFKA_ACK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
                 outboxEventRepository.delete(event);
