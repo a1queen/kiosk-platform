@@ -7,10 +7,14 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -60,19 +64,53 @@ class OrderTest {
     }
 
     @Test
-    @DisplayName("Should verify equals, hashCode and toString")
-    void shouldVerifyEqualsHashCodeAndToString() {
+    @DisplayName("Should verify equals, hashCode and toString according to JPA pattern")
+    void shouldVerifyEqualsHashCodeAndToString() throws Exception {
         Order order1 = new Order("Z-001", new BigDecimal("20.00"), List.of(createSampleItem()));
         Order order2 = new Order("Z-001", new BigDecimal("30.00"), List.of(createSampleItem()));
-        Order different = new Order("Z-002", new BigDecimal("20.00"), List.of(createSampleItem()));
 
-        assertThat(order1).isEqualTo(order2)
-                .hasSameHashCodeAs(order2)
-                .isNotEqualTo(different)
-                .isNotEqualTo(null)
-                .isNotEqualTo(new Object());
+        // Transient entities (id == null) are only equal to themselves
+        assertThat(order1).isEqualTo(order1);
+        assertThat(order1).isNotEqualTo(order2);
+        assertThat(order1).isNotEqualTo(null);
+        assertThat(order1).isNotEqualTo(new Object());
+        assertThat(order1.hashCode()).isEqualTo(order2.hashCode());
+
+        // Entities with the same ID are equal
+        UUID id = UUID.randomUUID();
+        Field idField = Order.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(order1, id);
+        idField.set(order2, id);
+
+        assertThat(order1).isEqualTo(order2);
+        assertThat(order1.hashCode()).isEqualTo(order2.hashCode());
+
+        // Entities with different IDs are not equal
+        UUID differentId = UUID.randomUUID();
+        idField.set(order2, differentId);
+        assertThat(order1).isNotEqualTo(order2);
+
+        // Hash code is stable before and after setting ID
+        assertThat(order1.hashCode()).isEqualTo(Order.class.hashCode());
 
         assertThat(order1.toString()).contains("Z-001", "20.00", "CREATED", "itemsCount=1");
+    }
+
+    @Test
+    @DisplayName("Should maintain HashSet membership when ID is assigned after insertion")
+    void shouldMaintainSetMembershipWhenIdIsAssigned() throws Exception {
+        Order order = new Order("Z-001", new BigDecimal("20.00"), List.of(createSampleItem()));
+        Set<Order> set = new HashSet<>();
+        set.add(order);
+
+        assertThat(set).contains(order);
+
+        Field idField = Order.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(order, UUID.randomUUID());
+
+        assertThat(set).contains(order);
     }
 
     @Test

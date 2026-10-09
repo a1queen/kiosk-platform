@@ -10,7 +10,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +34,8 @@ class OrderItemTest {
     }
 
     @Test
-    @DisplayName("Should initialize empty notes when notes list is null")
-    void shouldInitializeEmptyNotesWhenNullGiven() {
+    @DisplayName("Should create OrderItem with null notes converted to empty list")
+    void shouldCreateOrderItemWithNullNotes() {
         OrderItem item = new OrderItem("Fries", 1, null);
 
         assertThat(item.getProductName()).isEqualTo("Fries");
@@ -42,8 +44,8 @@ class OrderItemTest {
     }
 
     @Test
-    @DisplayName("Should create defensive copy of notes list")
-    void shouldCreateDefensiveCopyOfNotes() {
+    @DisplayName("Constructor should defensively copy the provided notes list")
+    void shouldDefensivelyCopyNotes() {
         List<String> mutableNotes = new ArrayList<>();
         mutableNotes.add("Spicy");
 
@@ -102,29 +104,54 @@ class OrderItemTest {
     }
 
     @Test
-    @DisplayName("Should verify equals, hashCode and toString")
+    @DisplayName("Should verify equals, hashCode and toString according to JPA pattern")
     void shouldVerifyEqualsHashCodeAndToString() throws Exception {
         OrderItem item1 = new OrderItem("Burger", 2, List.of("No onion"));
         OrderItem item2 = new OrderItem("Burger", 2, List.of("No onion"));
         OrderItem different = new OrderItem("Fries", 1, null);
 
-        assertThat(item1).isEqualTo(item2)
-                .hasSameHashCodeAs(item2)
-                .isNotEqualTo(different)
-                .isNotEqualTo(null)
-                .isNotEqualTo(new Object());
+        // Transient entities (id == null) are only equal to themselves
+        assertThat(item1).isEqualTo(item1);
+        assertThat(item1).isNotEqualTo(item2);
+        assertThat(item1).isNotEqualTo(different);
+        assertThat(item1).isNotEqualTo(null);
+        assertThat(item1).isNotEqualTo(new Object());
+        assertThat(item1.hashCode()).isEqualTo(item2.hashCode());
 
         assertThat(item1.toString()).contains("Burger", "2", "No onion");
 
-        // With ID
+        // With same ID
         UUID id = UUID.randomUUID();
         Field idField = OrderItem.class.getDeclaredField("id");
         idField.setAccessible(true);
         idField.set(item1, id);
         idField.set(item2, id);
 
-        assertThat(item1).isEqualTo(item2)
-                .hasSameHashCodeAs(item2);
+        assertThat(item1).isEqualTo(item2);
+        assertThat(item1.hashCode()).isEqualTo(item2.hashCode());
+
+        // With different ID
+        idField.set(item2, UUID.randomUUID());
+        assertThat(item1).isNotEqualTo(item2);
+
+        // Hash code is stable
+        assertThat(item1.hashCode()).isEqualTo(OrderItem.class.hashCode());
+    }
+
+    @Test
+    @DisplayName("Should maintain HashSet membership when ID is assigned after insertion")
+    void shouldMaintainSetMembershipWhenIdIsAssigned() throws Exception {
+        OrderItem item = new OrderItem("Burger", 2, List.of("No onion"));
+        Set<OrderItem> set = new HashSet<>();
+        set.add(item);
+
+        assertThat(set).contains(item);
+
+        Field idField = OrderItem.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(item, UUID.randomUUID());
+
+        assertThat(set).contains(item);
     }
 
     @Test
