@@ -1,17 +1,20 @@
 package com.example.KioskService.controller;
 
 import com.example.KioskService.dto.OrderResponse;
-import com.example.KioskService.service.OrderService;
 import com.example.KioskService.dto.RequestedOrder;
+import com.example.KioskService.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -36,7 +39,8 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<List<OrderResponse>> getOrders() {
-        return ResponseEntity.ok(orderService.getOrders());
+    public ResponseEntity<Page<OrderResponse>> getOrders(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(orderService.getOrders(pageable));
     }
 }

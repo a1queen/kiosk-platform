@@ -3,6 +3,7 @@ package com.example.KioskService.service;
 import com.example.KioskService.dto.OrderResponse;
 import com.example.KioskService.dto.RequestedOrder;
 import com.example.KioskService.model.Order;
+import com.example.KioskService.model.OrderItem;
 import com.example.KioskService.model.OrderStatus;
 import com.example.KioskService.model.OutboxEvent;
 import com.example.KioskService.repository.OrderRepository;
@@ -18,6 +19,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -145,5 +150,24 @@ class OrderServiceTest {
                 .hasMessageContaining("Failed to serialize outbox event payload");
 
         verify(outboxEventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return paged order responses")
+    void shouldReturnPagedOrders() {
+        Pageable pageable = PageRequest.of(0, 10);
+        OrderItem item = new OrderItem("Burger", 1, null);
+        Order order = new Order("Z-001", new BigDecimal("25.00"), List.of(item));
+        Page<Order> orderPage = new PageImpl<>(List.of(order), pageable, 1);
+
+        given(orderRepository.findAllWithItems(pageable)).willReturn(orderPage);
+
+        Page<OrderResponse> result = orderService.getOrders(pageable);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().orderNumber()).isEqualTo("Z-001");
+        verify(orderRepository).findAllWithItems(pageable);
     }
 }

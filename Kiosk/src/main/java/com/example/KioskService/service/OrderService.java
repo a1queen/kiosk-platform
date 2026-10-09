@@ -12,6 +12,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,20 +30,21 @@ public class OrderService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public OrderResponse placeOrder(RequestedOrder request) {
-        String orderNumber = orderNumberGenerator.generate();
-        log.info("Processing order placement with generated number: {}", orderNumber);
+    public OrderResponse placeOrder(RequestedOrder requestedOrder) {
+        String generatedOrderNumber = orderNumberGenerator.generate();
+        log.info("Processing order placement with generated number: {}", generatedOrderNumber);
 
-        List<OrderItem> items = request.items().stream()
-                .map(i -> new OrderItem(i.productName(), i.quantity(), i.notes()))
+        List<OrderItem> items = requestedOrder.items().stream()
+                .map(item -> new OrderItem(item.productName(), item.quantity(), item.notes()))
                 .toList();
 
-        Order order = new Order(orderNumber, request.totalAmount(), items);
+        Order order = new Order(generatedOrderNumber, requestedOrder.totalAmount(), items);
+
         Order savedOrder = orderRepository.save(order);
         log.info("Order successfully persisted with ID: {} and number: {}", savedOrder.getId(), savedOrder.getOrderNumber());
 
-        OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(savedOrder);
-        String payload = serializePayload(orderPlacedEvent);
+        OrderPlacedEvent event = new OrderPlacedEvent(savedOrder);
+        String payload = serializePayload(event);
 
         OutboxEvent outboxEvent = new OutboxEvent(
                 "ORDER",
@@ -63,7 +66,8 @@ public class OrderService {
         }
     }
 
-    public List<OrderResponse> getOrders() {
-        return orderRepository.findAll().stream().map(OrderResponse::new).toList();
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getOrders(Pageable pageable) {
+        return orderRepository.findAllWithItems(pageable).map(OrderResponse::new);
     }
 }

@@ -13,6 +13,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,6 +56,7 @@ class OrderControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(orderController)
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -136,5 +143,24 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.title").value("Invalid Request Content"))
                 .andExpect(jsonPath("$.invalidFields.totalAmount").value("Total amount must be greater than zero"))
                 .andExpect(jsonPath("$.invalidFields.items").value("Order must contain at least one item"));
+    }
+
+    @Test
+    @DisplayName("MockMvc GET /orders should return 200 and paged response")
+    void shouldReturnPagedOrdersThroughMockMvc() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderResponse orderResponse = new OrderResponse(orderId, "Z-005", OrderStatus.CREATED);
+        Page<OrderResponse> page = new PageImpl<>(List.of(orderResponse), PageRequest.of(0, 20), 1);
+
+        given(orderService.getOrders(any(Pageable.class))).willReturn(page);
+
+        mockMvc.perform(get("/orders")
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].orderId").value(orderId.toString()))
+                .andExpect(jsonPath("$.content[0].orderNumber").value("Z-005"))
+                .andExpect(jsonPath("$.content[0].status").value("CREATED"))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 }
