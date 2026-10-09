@@ -19,7 +19,7 @@ public class OutboxPublisher {
 
     private static final String ORDERS_TOPIC = "orders";
     private static final int BATCH_SIZE = 50;
-    private static final long KAFKA_ACK_TIMEOUT_SECONDS = 2;
+    private static final long KAFKA_ACK_TIMEOUT_SECONDS = 5;
     private static final int MAX_ATTEMPTS = 10;
 
     private final OutboxEventRepository outboxEventRepository;

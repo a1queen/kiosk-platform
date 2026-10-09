@@ -10,7 +10,7 @@ spring:
     scheduling:
       shutdown:
         await-termination: true
-        await-termination-period: 20s
+        await-termination-period: 30s
   data:
     web:
       pageable:
@@ -24,6 +24,9 @@ spring:
       acks: all
       properties:
         enable.idempotence: true
+        max.block.ms: 2000
+        request.timeout.ms: 2000
+        delivery.timeout.ms: 3000
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/kiosk_db}
     username: ${SPRING_DATASOURCE_USERNAME:kiosk_user}
