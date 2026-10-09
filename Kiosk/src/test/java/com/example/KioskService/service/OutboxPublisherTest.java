@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -61,11 +62,12 @@ class OutboxPublisherTest {
 
         verify(kafkaTemplate, never()).send(any(), any(), any());
         verify(outboxEventRepository, never()).delete(any());
+        verify(outboxEventRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Should stop batch and not delete event when Kafka send fails")
-    void shouldStopBatchOnFailure() {
+    @DisplayName("Should increment attempts and save when Kafka send fails, then stop batch")
+    void shouldStopBatchOnFailureAndRecordAttempts() {
         OutboxEvent event1 = new OutboxEvent("ORDER", "order-1", "OrderPlacedEvent", "{\"orderId\":\"1\"}");
         OutboxEvent event2 = new OutboxEvent("ORDER", "order-2", "OrderPlacedEvent", "{\"orderId\":\"2\"}");
 
@@ -77,7 +79,11 @@ class OutboxPublisherTest {
 
         outboxPublisher.publishPendingEvents();
 
-        verify(kafkaTemplate, times(1)).send(eq("orders"), any(), any());
+        verify(kafkaTemplate, times(1)).send(eq("orders"), eq("order-1"), any());
         verify(outboxEventRepository, never()).delete(any());
+        
+        // Assert that attempts incremented and saved
+        verify(outboxEventRepository, times(1)).save(event1);
+        assertThat(event1.getAttempts()).isEqualTo(1);
     }
 }

@@ -19,6 +19,10 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OutboxEvent {
 
+    public enum OutboxStatus {
+        PENDING, FAILED
+    }
+
     @Id
     @GeneratedValue
     private UUID id;
@@ -39,6 +43,13 @@ public class OutboxEvent {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private OutboxStatus status = OutboxStatus.PENDING;
+
+    @Column(name = "attempts", nullable = false)
+    private int attempts = 0;
+
     public OutboxEvent(String aggregateType, String aggregateId, String eventType, String payload) {
         if (aggregateType == null || aggregateType.isBlank()) {
             throw new DomainValidationException("Aggregate type must not be blank");
@@ -58,6 +69,13 @@ public class OutboxEvent {
         this.eventType = eventType;
         this.payload = payload;
         this.createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+    }
+
+    public void recordFailure(int maxAttempts) {
+        this.attempts++;
+        if (this.attempts >= maxAttempts) {
+            this.status = OutboxStatus.FAILED;
+        }
     }
 
     @Override
@@ -82,6 +100,8 @@ public class OutboxEvent {
                 ", aggregateType='" + aggregateType + '\'' +
                 ", aggregateId='" + aggregateId + '\'' +
                 ", eventType='" + eventType + '\'' +
+                ", status=" + status +
+                ", attempts=" + attempts +
                 ", createdAt=" + createdAt +
                 '}';
     }
