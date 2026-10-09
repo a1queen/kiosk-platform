@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -40,9 +41,10 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<OrderResponse>> getOrders(
+    public ResponseEntity<PagedModel<OrderResponse>> getOrders(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(orderService.getOrders(pageable));
+        Page<OrderResponse> page = orderService.getOrders(pageable);
+        return ResponseEntity.ok(new PagedModel<>(page));
     }
 
     @GetMapping("/{id}")

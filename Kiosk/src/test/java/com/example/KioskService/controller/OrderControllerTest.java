@@ -137,7 +137,7 @@ class OrderControllerTest {
     }
 
     @Test
-    @DisplayName("MockMvc GET /orders should return 200 and paged response")
+    @DisplayName("MockMvc GET /orders should return 200 and paged response using PagedModel structure")
     void shouldReturnPagedOrdersThroughMockMvc() throws Exception {
         UUID orderId = UUID.randomUUID();
         OrderResponse orderResponse = new OrderResponse(orderId, "Z-005", OrderStatus.CREATED);
@@ -152,7 +152,7 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.content[0].orderId").value(orderId.toString()))
                 .andExpect(jsonPath("$.content[0].orderNumber").value("Z-005"))
                 .andExpect(jsonPath("$.content[0].status").value("CREATED"))
-                .andExpect(jsonPath("$.totalElements").value(1));
+                .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 
     @Test

@@ -5,6 +5,7 @@ spring:
     web:
       pageable:
         serialization-mode: via-dto
+        max-page-size: 50
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
