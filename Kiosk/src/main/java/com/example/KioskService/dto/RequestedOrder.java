@@ -24,8 +24,9 @@ public record RequestedOrder(
             @NotBlank(message = "Product name must not be blank")
             String productName,
 
+            @NotNull(message = "Quantity is required")
             @Positive(message = "Quantity must be greater than zero")
-            int quantity,
+            Integer quantity,
 
             List<String> notes
     ) {

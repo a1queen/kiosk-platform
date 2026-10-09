@@ -2,6 +2,7 @@ package com.example.KioskService.service;
 
 import com.example.KioskService.dto.OrderResponse;
 import com.example.KioskService.dto.RequestedOrder;
+import com.example.KioskService.exception.OrderNotFoundException;
 import com.example.KioskService.model.Order;
 import com.example.KioskService.model.OrderItem;
 import com.example.KioskService.model.OrderStatus;
@@ -27,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -169,5 +171,38 @@ class OrderServiceTest {
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().orderNumber()).isEqualTo("Z-001");
         verify(orderRepository).findAllWithItems(pageable);
+    }
+
+    @Test
+    @DisplayName("Should return OrderResponse when order is found by ID")
+    void shouldReturnOrderByIdWhenFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        OrderItem item = new OrderItem("Burger", 1, null);
+        Order order = new Order("Z-001", new BigDecimal("25.00"), List.of(item));
+        Field idField = Order.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(order, id);
+
+        given(orderRepository.findByIdWithItems(id)).willReturn(Optional.of(order));
+
+        OrderResponse response = orderService.getOrderById(id);
+
+        assertThat(response).isNotNull();
+        assertThat(response.orderId()).isEqualTo(id);
+        assertThat(response.orderNumber()).isEqualTo("Z-001");
+        verify(orderRepository).findByIdWithItems(id);
+    }
+
+    @Test
+    @DisplayName("Should throw OrderNotFoundException when order does not exist")
+    void shouldThrowOrderNotFoundExceptionWhenOrderDoesNotExist() {
+        UUID id = UUID.randomUUID();
+        given(orderRepository.findByIdWithItems(id)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrderById(id))
+                .isInstanceOf(OrderNotFoundException.class)
+                .hasMessage("Order not found with ID: " + id);
+
+        verify(orderRepository).findByIdWithItems(id);
     }
 }

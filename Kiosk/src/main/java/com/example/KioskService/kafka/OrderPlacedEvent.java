@@ -30,7 +30,7 @@ public record OrderPlacedEvent(
 
     public record Item(
             String productName,
-            int quantity,
+            Integer quantity,
             List<String> notes
     ) {
         public Item {

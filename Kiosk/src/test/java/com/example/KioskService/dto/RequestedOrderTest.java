@@ -154,4 +154,17 @@ class RequestedOrderTest {
                 .extracting(ConstraintViolation::getMessage)
                 .contains("Quantity must be greater than zero");
     }
+
+    @Test
+    @DisplayName("Should violate constraint when item quantity is null")
+    void shouldViolateWhenItemQuantityIsNull() {
+        RequestedOrder.Item item = new RequestedOrder.Item("Burger", null, null);
+        RequestedOrder order = new RequestedOrder(new BigDecimal("10.00"), List.of(item));
+
+        Set<ConstraintViolation<RequestedOrder>> violations = validator.validate(order);
+
+        assertThat(violations)
+                .extracting(ConstraintViolation::getMessage)
+                .contains("Quantity is required");
+    }
 }

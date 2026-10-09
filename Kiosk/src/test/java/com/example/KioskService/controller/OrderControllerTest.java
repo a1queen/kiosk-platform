@@ -3,9 +3,9 @@ package com.example.KioskService.controller;
 import com.example.KioskService.dto.OrderResponse;
 import com.example.KioskService.dto.RequestedOrder;
 import com.example.KioskService.exception.GlobalExceptionHandler;
+import com.example.KioskService.exception.OrderNotFoundException;
 import com.example.KioskService.model.OrderStatus;
 import com.example.KioskService.service.OrderService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -35,7 +34,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -56,61 +54,54 @@ class OrderControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(orderController)
-                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
     }
 
-    @AfterEach
-    void tearDown() {
-        RequestContextHolder.resetRequestAttributes();
-    }
-
     @Test
-    @DisplayName("sendOrder should return HTTP 201 with Location header and response body")
+    @DisplayName("Should return 201 Created with Location header and response body")
     void shouldReturnCreatedWithLocationHeaderAndBody() {
-        // Given
-        UUID orderId = UUID.randomUUID();
-        OrderResponse expectedResponse = new OrderResponse(orderId, "Z-001", OrderStatus.CREATED);
-
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/orders");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
+        UUID orderId = UUID.randomUUID();
         RequestedOrder requestedOrder = new RequestedOrder(
-                new BigDecimal("29.99"),
+                new BigDecimal("25.00"),
                 List.of(new RequestedOrder.Item("Burger", 1, null))
         );
+        OrderResponse serviceResponse = new OrderResponse(orderId, "Z-001", OrderStatus.CREATED);
 
-        given(orderService.placeOrder(requestedOrder)).willReturn(expectedResponse);
+        given(orderService.placeOrder(requestedOrder)).willReturn(serviceResponse);
 
-        // When
-        ResponseEntity<OrderResponse> responseEntity = orderController.sendOrder(requestedOrder);
+        ResponseEntity<OrderResponse> response = orderController.sendOrder(requestedOrder);
 
-        // Then
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(responseEntity.getHeaders().getLocation())
-                .isEqualTo(URI.create("http://localhost/orders/" + orderId));
-        assertThat(responseEntity.getBody()).isEqualTo(expectedResponse);
-        verify(orderService).placeOrder(requestedOrder);
+        assertThat(response.getStatusCode().value()).isEqualTo(201);
+        assertThat(response.getHeaders().getLocation()).isEqualTo(URI.create("http://localhost/orders/" + orderId));
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().orderId()).isEqualTo(orderId);
+        assertThat(response.getBody().orderNumber()).isEqualTo("Z-001");
+        assertThat(response.getBody().status()).isEqualTo(OrderStatus.CREATED);
+
+        RequestContextHolder.resetRequestAttributes();
     }
 
     @Test
-    @DisplayName("MockMvc POST /orders should return 201 and valid JSON")
+    @DisplayName("MockMvc POST /orders should return 201 Created with Location header")
     void shouldHandlePostOrdersThroughMockMvc() throws Exception {
         UUID orderId = UUID.randomUUID();
-        OrderResponse response = new OrderResponse(orderId, "Z-003", OrderStatus.CREATED);
-
-        given(orderService.placeOrder(any(RequestedOrder.class))).willReturn(response);
+        OrderResponse serviceResponse = new OrderResponse(orderId, "Z-003", OrderStatus.CREATED);
+        given(orderService.placeOrder(any(RequestedOrder.class))).willReturn(serviceResponse);
 
         String jsonPayload = """
                 {
-                    "totalAmount": 42.50,
+                    "totalAmount": 29.99,
                     "items": [
                         {
-                            "productName": "Pizza",
-                            "quantity": 2,
-                            "notes": ["Extra cheese"]
+                            "productName": "Burger",
+                            "quantity": 1,
+                            "notes": ["No onions"]
                         }
                     ]
                 }
@@ -162,5 +153,32 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.content[0].orderNumber").value("Z-005"))
                 .andExpect(jsonPath("$.content[0].status").value("CREATED"))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("MockMvc GET /orders/{id} should return 200 OK when order is found")
+    void shouldReturnOrderByIdThroughMockMvc() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        OrderResponse orderResponse = new OrderResponse(orderId, "Z-001", OrderStatus.CREATED);
+        given(orderService.getOrderById(orderId)).willReturn(orderResponse);
+
+        mockMvc.perform(get("/orders/{id}", orderId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderId").value(orderId.toString()))
+                .andExpect(jsonPath("$.orderNumber").value("Z-001"))
+                .andExpect(jsonPath("$.status").value("CREATED"));
+    }
+
+    @Test
+    @DisplayName("MockMvc GET /orders/{id} should return 404 Not Found when order does not exist")
+    void shouldReturn404WhenOrderNotFoundThroughMockMvc() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        given(orderService.getOrderById(orderId)).willThrow(new OrderNotFoundException(orderId));
+
+        mockMvc.perform(get("/orders/{id}", orderId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Order Not Found"))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.detail").value("Order not found with ID: " + orderId));
     }
 }

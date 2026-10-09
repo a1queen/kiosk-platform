@@ -4,7 +4,6 @@ import com.example.KioskService.dto.OrderResponse;
 import com.example.KioskService.dto.RequestedOrder;
 import com.example.KioskService.service.OrderService;
 import jakarta.validation.Valid;
-import jakarta.websocket.server.PathParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -46,8 +45,8 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrders(pageable));
     }
 
-    @GetMapping
-    public ResponseEntity<OrderResponse> getOrderById (@PathVariable UUID id){
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable UUID id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 }
