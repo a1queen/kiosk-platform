@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -24,4 +25,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             countQuery = "SELECT count(o) FROM Order o"
     )
     Page<Order> findAllWithItems(Pageable pageable);
+
+
+    @Query(value = "SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id=:id")
+    Optional<Order> findByIdWithItems(@Param("id") UUID id);
 }

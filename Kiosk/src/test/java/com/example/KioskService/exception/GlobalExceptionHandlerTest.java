@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,6 +23,20 @@ class GlobalExceptionHandlerTest {
 
     @SuppressWarnings("unused")
     private void sampleControllerMethod(RequestedOrder order) {}
+
+    @Test
+    @DisplayName("Should handle OrderNotFoundException and return 404 Not Found")
+    void shouldHandleOrderNotFoundException() {
+        UUID orderId = UUID.randomUUID();
+        OrderNotFoundException ex = new OrderNotFoundException(orderId);
+
+        ProblemDetail problemDetail = handler.handleOrderNotFoundException(ex);
+
+        assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(problemDetail.getTitle()).isEqualTo("Order Not Found");
+        assertThat(problemDetail.getDetail()).isEqualTo("Order not found with ID: " + orderId);
+        assertThat(problemDetail.getType().toString()).isEqualTo("urn:problem-type:order-not-found");
+    }
 
     @Test
     @DisplayName("Should handle MethodArgumentNotValidException and return 400 with field errors")

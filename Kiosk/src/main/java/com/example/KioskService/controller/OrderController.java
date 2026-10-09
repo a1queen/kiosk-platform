@@ -4,6 +4,7 @@ import com.example.KioskService.dto.OrderResponse;
 import com.example.KioskService.dto.RequestedOrder;
 import com.example.KioskService.service.OrderService;
 import jakarta.validation.Valid;
+import jakarta.websocket.server.PathParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -42,5 +44,10 @@ public class OrderController {
     public ResponseEntity<Page<OrderResponse>> getOrders(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(orderService.getOrders(pageable));
+    }
+
+    @GetMapping
+    public ResponseEntity<OrderResponse> getOrderById (@PathVariable UUID id){
+        return ResponseEntity.ok(orderService.getOrderById(id));
     }
 }

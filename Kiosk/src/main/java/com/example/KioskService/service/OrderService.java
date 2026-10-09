@@ -2,6 +2,7 @@ package com.example.KioskService.service;
 
 import com.example.KioskService.dto.OrderResponse;
 import com.example.KioskService.dto.RequestedOrder;
+import com.example.KioskService.exception.OrderNotFoundException;
 import com.example.KioskService.kafka.OrderPlacedEvent;
 import com.example.KioskService.model.Order;
 import com.example.KioskService.model.OrderItem;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -69,5 +71,9 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Page<OrderResponse> getOrders(Pageable pageable) {
         return orderRepository.findAllWithItems(pageable).map(OrderResponse::new);
+    }
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(UUID id){
+        return orderRepository.findByIdWithItems(id).map(OrderResponse::new).orElseThrow(() -> new OrderNotFoundException(id));
     }
 }

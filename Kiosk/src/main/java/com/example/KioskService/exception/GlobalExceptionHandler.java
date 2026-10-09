@@ -16,6 +16,19 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ProblemDetail handleOrderNotFoundException(OrderNotFoundException ex) {
+        log.warn("Order not found: {}", ex.getMessage());
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Order Not Found");
+        problemDetail.setType(URI.create("urn:problem-type:order-not-found"));
+        return problemDetail;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationException(MethodArgumentNotValidException ex) {
         log.warn("Validation failed with {} error(s)", ex.getBindingResult().getErrorCount());
