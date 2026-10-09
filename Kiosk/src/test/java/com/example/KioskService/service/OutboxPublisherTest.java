@@ -13,6 +13,7 @@ import org.springframework.kafka.support.SendResult;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,8 +37,8 @@ class OutboxPublisherTest {
     @Test
     @DisplayName("Should publish all pending events and delete them from repository")
     void shouldPublishPendingEvents() {
-        OutboxEvent event1 = new OutboxEvent("ORDER", "order-1", "OrderPlacedEvent", "{\"orderId\":\"1\"}");
-        OutboxEvent event2 = new OutboxEvent("ORDER", "order-2", "OrderPlacedEvent", "{\"orderId\":\"2\"}");
+        OutboxEvent event1 = new OutboxEvent(UUID.randomUUID(), "ORDER", "order-1", "OrderPlacedEvent", "{\"orderId\":\"1\"}");
+        OutboxEvent event2 = new OutboxEvent(UUID.randomUUID(), "ORDER", "order-2", "OrderPlacedEvent", "{\"orderId\":\"2\"}");
 
         given(outboxEventRepository.fetchPendingBatch(50)).willReturn(List.of(event1, event2));
 
@@ -66,10 +67,10 @@ class OutboxPublisherTest {
     }
 
     @Test
-    @DisplayName("Should increment attempts and save when Kafka send fails, then stop batch")
+    @DisplayName("Should increment attempts when Kafka send fails, then stop batch")
     void shouldStopBatchOnFailureAndRecordAttempts() {
-        OutboxEvent event1 = new OutboxEvent("ORDER", "order-1", "OrderPlacedEvent", "{\"orderId\":\"1\"}");
-        OutboxEvent event2 = new OutboxEvent("ORDER", "order-2", "OrderPlacedEvent", "{\"orderId\":\"2\"}");
+        OutboxEvent event1 = new OutboxEvent(UUID.randomUUID(), "ORDER", "order-1", "OrderPlacedEvent", "{\"orderId\":\"1\"}");
+        OutboxEvent event2 = new OutboxEvent(UUID.randomUUID(), "ORDER", "order-2", "OrderPlacedEvent", "{\"orderId\":\"2\"}");
 
         given(outboxEventRepository.fetchPendingBatch(50)).willReturn(List.of(event1, event2));
 
@@ -82,8 +83,8 @@ class OutboxPublisherTest {
         verify(kafkaTemplate, times(1)).send(eq("orders"), eq("order-1"), any());
         verify(outboxEventRepository, never()).delete(any());
         
-        // Assert that attempts incremented and saved
-        verify(outboxEventRepository, times(1)).save(event1);
+        // Assert that attempts incremented, dirty checking handles the save in reality
+        verify(outboxEventRepository, never()).save(any());
         assertThat(event1.getAttempts()).isEqualTo(1);
     }
 }

@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -17,14 +18,13 @@ import java.util.UUID;
 @Table(name = "outbox_events")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class OutboxEvent {
+public class OutboxEvent implements Persistable<UUID> {
 
     public enum OutboxStatus {
         PENDING, FAILED
     }
 
     @Id
-    @GeneratedValue
     private UUID id;
 
     @Column(name = "aggregate_type", nullable = false, length = 64)
@@ -49,8 +49,14 @@ public class OutboxEvent {
 
     @Column(name = "attempts", nullable = false)
     private int attempts = 0;
+    
+    @Transient
+    private boolean isNew = true;
 
-    public OutboxEvent(String aggregateType, String aggregateId, String eventType, String payload) {
+    public OutboxEvent(UUID id, String aggregateType, String aggregateId, String eventType, String payload) {
+        if (id == null) {
+            throw new DomainValidationException("ID must not be null");
+        }
         if (aggregateType == null || aggregateType.isBlank()) {
             throw new DomainValidationException("Aggregate type must not be blank");
         }
@@ -64,11 +70,23 @@ public class OutboxEvent {
             throw new DomainValidationException("Payload must not be blank");
         }
 
+        this.id = id;
         this.aggregateType = aggregateType;
         this.aggregateId = aggregateId;
         this.eventType = eventType;
         this.payload = payload;
         this.createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+    }
+    
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PrePersist
+    @PostLoad
+    void markNotNew() {
+        this.isNew = false;
     }
 
     public void recordFailure(int maxAttempts) {

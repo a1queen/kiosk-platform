@@ -28,7 +28,7 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderResponse> sendOrder(@RequestBody @Valid RequestedOrder order) {
-        log.info("Received request to place order with {} items", order.items() != null ? order.items().size() : 0);
+        log.info("Received request to place order with {} items", order.items().size());
         OrderResponse response = orderService.placeOrder(order);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()

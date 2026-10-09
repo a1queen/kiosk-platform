@@ -19,7 +19,6 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -41,7 +40,7 @@ public class OrderService {
                 request.totalAmount(),
                 request.items().stream()
                         .map(dto -> new OrderItem(dto.productName(), dto.quantity(), dto.notes()))
-                        .collect(Collectors.toList())
+                        .toList()
         );
 
         Order savedOrder = orderRepository.save(newOrder);
@@ -51,13 +50,14 @@ public class OrderService {
         String payload = serializePayload(eventPayload);
 
         OutboxEvent outboxEvent = new OutboxEvent(
+                eventPayload.eventId(), // synchronized UUID
                 "ORDER",
                 savedOrder.getId().toString(),
                 "OrderPlacedEvent",
                 payload
         );
         outboxEventRepository.save(outboxEvent);
-        log.info("Outbox event created for order ID: {}", savedOrder.getId());
+        log.info("Outbox event created for order ID: {} with eventId: {}", savedOrder.getId(), eventPayload.eventId());
 
         return new OrderResponse(savedOrder);
     }

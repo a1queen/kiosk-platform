@@ -95,9 +95,11 @@ class OrderServiceTest {
 
         verify(outboxEventRepository).save(outboxEventCaptor.capture());
         OutboxEvent capturedEvent = outboxEventCaptor.getValue();
+        assertThat(capturedEvent.getId()).isNotNull();
         assertThat(capturedEvent.getAggregateId()).isEqualTo(savedOrder.getId().toString());
         assertThat(capturedEvent.getEventType()).isEqualTo("OrderPlacedEvent");
         assertThat(capturedEvent.getPayload()).contains(savedOrder.getId().toString());
+        assertThat(capturedEvent.getPayload()).contains(capturedEvent.getId().toString()); // eventId is synced
     }
     
     @Test

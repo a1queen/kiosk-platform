@@ -42,7 +42,6 @@ public class OutboxPublisher {
                 log.info("Published and removed outbox event ID: {} for aggregate: {} to Kafka", event.getId(), event.getAggregateId());
             } catch (Exception e) {
                 event.recordFailure(MAX_ATTEMPTS);
-                outboxEventRepository.save(event); // Explicit save to persist status/attempts update
                 log.error("Failed to publish outbox event ID: {} to Kafka. Incremented attempts to {}. Status: {}. Stopping batch.", 
                           event.getId(), event.getAttempts(), event.getStatus(), e);
                 break;
