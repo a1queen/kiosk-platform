@@ -1,7 +1,10 @@
-Kiosk/target/
+target/
+.mvn/
+mvnw
+mvnw.cmd
 .git/
 .gitignore
 .idea/
 *.iml
-Kiosk/.mvn/
 *.log
+HELP.md
