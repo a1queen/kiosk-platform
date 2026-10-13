@@ -1,0 +1,33 @@
+package org.example.kitchenservice;
+
+
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+public record OrderPlacedEvent(
+        UUID eventId,
+        UUID orderId,
+        String orderNumber,
+        List<Item> items
+) {
+
+    public OrderPlacedEvent {
+        Objects.requireNonNull(eventId, "eventId");
+        Objects.requireNonNull(orderId, "orderId");
+        Objects.requireNonNull(orderNumber, "orderNumber");
+        items = items != null ? List.copyOf(items) : List.of();
+    }
+
+    public record Item(
+            String productName,
+            Integer quantity,
+            List<String> notes
+    ) {
+        public Item {
+            Objects.requireNonNull(productName, "productName");
+            Objects.requireNonNull(quantity, "quantity");
+            notes = notes != null ? List.copyOf(notes) : List.of();
+        }
+    }
+}
