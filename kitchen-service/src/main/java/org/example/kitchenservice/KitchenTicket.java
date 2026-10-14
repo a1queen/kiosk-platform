@@ -19,24 +19,23 @@ import java.util.UUID;
 public class KitchenTicket {
 
     @Id
-    @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private UUID orderId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private UUID eventId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private String orderNumber;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     @JdbcTypeCode(SqlTypes.JSON)
     private List<TicketItem> items;
 
     @Generated
-    @Column(nullable = false, insertable = false)
+    @Column(nullable = false, insertable = false, updatable = false)
     private Instant receivedAt;
 
     @Enumerated(EnumType.STRING)
@@ -51,24 +50,18 @@ public class KitchenTicket {
         this.ticketStatus = TicketStatus.RECEIVED;
     }
 
-    public void markAsPreparing() {
-        if (this.ticketStatus != TicketStatus.RECEIVED)
-            throw new IllegalStateException("Only tickets with RECEIVED status can move to PREPARING, current: " + this.ticketStatus);
-        ticketStatus = TicketStatus.PREPARING;
-    }
+    public void markAsPreparing() { moveTo(TicketStatus.RECEIVED, TicketStatus.PREPARING); }
 
-    public void markAsReady() {
-        if (this.ticketStatus != TicketStatus.PREPARING) {
-            throw new IllegalStateException("Only tickets with PREPARING status can move to READY, current: " + this.ticketStatus);
-        }
-        this.ticketStatus = TicketStatus.READY;
-    }
+    public void markAsReady() { moveTo(TicketStatus.PREPARING, TicketStatus.READY); }
 
-    public void markAsCompleted() {
-        if (this.ticketStatus != TicketStatus.READY) {
-            throw new IllegalStateException("Only tickets with READY status can move to COMPLETED, current: " + this.ticketStatus);
+    public void markAsCompleted() { moveTo(TicketStatus.READY, TicketStatus.COMPLETED); }
+
+    private void moveTo(TicketStatus expectedCurrent, TicketStatus target) {
+        if (ticketStatus != expectedCurrent) {
+            throw new TicketStateException("Only tickets with %s status can move to %s, current: %s"
+                    .formatted(expectedCurrent, target, ticketStatus));
         }
-        this.ticketStatus = TicketStatus.COMPLETED;
+        this.ticketStatus = target;
     }
 
 }

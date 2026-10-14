@@ -89,12 +89,15 @@ services:
 
   kitchen-service:
     build: ./kitchen-service
+    ports:
+      - "8081:8081"
     depends_on:
       kitchen-db:
         condition: service_healthy
       kafka:
         condition: service_healthy
     environment:
+      SERVER_PORT: 8081
       SPRING_DATASOURCE_URL: jdbc:postgresql://kitchen-db:5432/kitchen_db
       SPRING_DATASOURCE_USERNAME: kitchen_user
       SPRING_DATASOURCE_PASSWORD: kitchen_password

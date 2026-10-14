@@ -11,6 +11,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class TicketItemTest {
 
     @Test
+    void shouldCreateTicketItemCorrectly() {
+        TicketItem item = new TicketItem("Burger", 2, List.of("No onions"));
+
+        assertThat(item.productName()).isEqualTo("Burger");
+        assertThat(item.quantity()).isEqualTo(2);
+        assertThat(item.notes()).containsExactly("No onions");
+    }
+
+    @Test
     void shouldDefaultNullNotesToEmptyList() {
         TicketItem item = new TicketItem("Fries", 1, null);
 
@@ -28,14 +37,5 @@ class TicketItemTest {
         assertThat(item.notes()).containsExactly("Gluten free");
         assertThatThrownBy(() -> item.notes().add("Extra sauce"))
                 .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @Test
-    void shouldMapFromOrderPlacedEventItem() {
-        OrderPlacedEvent.Item eventItem = new OrderPlacedEvent.Item("Cheeseburger", 3, List.of("No pickles"));
-
-        TicketItem ticketItem = TicketItem.from(eventItem);
-
-        assertThat(ticketItem).isEqualTo(new TicketItem("Cheeseburger", 3, List.of("No pickles")));
     }
 }

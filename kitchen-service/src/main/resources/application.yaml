@@ -1,6 +1,12 @@
+server:
+  port: ${SERVER_PORT:8081}
+  shutdown: graceful
+
 spring:
   application:
     name: KitchenService
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
@@ -14,12 +20,13 @@ spring:
     listener:
       ack-mode: record
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/kitchen_db}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/kitchen_db}
     username: ${SPRING_DATASOURCE_USERNAME:kitchen_user}
     password: ${SPRING_DATASOURCE_PASSWORD:kitchen_password}
   flyway:
     enabled: true
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
 
