@@ -39,11 +39,36 @@ public class KitchenTicket {
     @Column(nullable = false, insertable = false)
     private Instant receivedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TicketStatus ticketStatus;
+
     public KitchenTicket(UUID orderId, UUID eventId, String orderNumber, List<TicketItem> items) {
         this.orderId = orderId;
         this.eventId = eventId;
         this.orderNumber = orderNumber;
         this.items = List.copyOf(items);
+        this.ticketStatus = TicketStatus.RECEIVED;
+    }
+
+    public void markAsPreparing() {
+        if (this.ticketStatus != TicketStatus.RECEIVED)
+            throw new IllegalStateException("Only tickets with RECEIVED status can move to PREPARING, current: " + this.ticketStatus);
+        ticketStatus = TicketStatus.PREPARING;
+    }
+
+    public void markAsReady() {
+        if (this.ticketStatus != TicketStatus.PREPARING) {
+            throw new IllegalStateException("Only tickets with PREPARING status can move to READY, current: " + this.ticketStatus);
+        }
+        this.ticketStatus = TicketStatus.READY;
+    }
+
+    public void markAsCompleted() {
+        if (this.ticketStatus != TicketStatus.READY) {
+            throw new IllegalStateException("Only tickets with READY status can move to COMPLETED, current: " + this.ticketStatus);
+        }
+        this.ticketStatus = TicketStatus.COMPLETED;
     }
 
 }

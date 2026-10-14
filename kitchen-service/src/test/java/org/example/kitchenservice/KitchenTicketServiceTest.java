@@ -35,15 +35,20 @@ class KitchenTicketServiceTest {
     }
 
     @Test
-    void shouldInsertTicketWithItemsSerializedToJson() {
+    void shouldInsertTicketWithItemsSerializedToJsonAndInitialStatus() {
         OrderPlacedEvent event = event(new OrderPlacedEvent.Item("Cheeseburger", 2, List.of("Extra cheese")));
-        when(kitchenTicketRepository.insertIfAbsent(any(), any(), anyString(), anyString())).thenReturn(1);
+        when(kitchenTicketRepository.insertIfAbsent(any(), any(), anyString(), anyString(), anyString())).thenReturn(1);
 
         kitchenTicketService.handleKitchenTicket(event);
 
         ArgumentCaptor<String> itemsJson = ArgumentCaptor.forClass(String.class);
         verify(kitchenTicketRepository).insertIfAbsent(
-                eq(event.orderId()), eq(event.eventId()), eq(event.orderNumber()), itemsJson.capture());
+                eq(event.orderId()),
+                eq(event.eventId()),
+                eq(event.orderNumber()),
+                itemsJson.capture(),
+                eq("RECEIVED")
+        );
         assertThat(jsonMapper.readTree(itemsJson.getValue())).isEqualTo(jsonMapper.readTree("""
                 [{"productName":"Cheeseburger","quantity":2,"notes":["Extra cheese"]}]
                 """));
@@ -52,7 +57,7 @@ class KitchenTicketServiceTest {
     @Test
     void shouldIgnoreDuplicateOrderWithoutThrowing() {
         OrderPlacedEvent event = event(new OrderPlacedEvent.Item("Fries", 1, List.of()));
-        when(kitchenTicketRepository.insertIfAbsent(any(), any(), anyString(), anyString())).thenReturn(0);
+        when(kitchenTicketRepository.insertIfAbsent(any(), any(), anyString(), anyString(), anyString())).thenReturn(0);
 
         assertThatNoException().isThrownBy(() -> kitchenTicketService.handleKitchenTicket(event));
     }

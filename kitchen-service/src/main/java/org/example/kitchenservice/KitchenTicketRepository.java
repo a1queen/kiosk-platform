@@ -11,12 +11,13 @@ public interface KitchenTicketRepository extends JpaRepository<KitchenTicket, UU
 
     @Modifying
     @Query(value = """
-            INSERT INTO kitchen_tickets (id, order_id, event_id, order_number, items)
-            VALUES (gen_random_uuid(), :orderId, :eventId, :orderNumber, CAST(:items AS jsonb))
+            INSERT INTO kitchen_tickets (id, order_id, event_id, order_number, items, status)
+            VALUES (gen_random_uuid(), :orderId, :eventId, :orderNumber, CAST(:items AS jsonb), :status)
             ON CONFLICT (order_id) DO NOTHING
             """, nativeQuery = true)
     int insertIfAbsent(@Param("orderId") UUID orderId,
                        @Param("eventId") UUID eventId,
                        @Param("orderNumber") String orderNumber,
-                       @Param("items") String items);
+                       @Param("items") String items,
+                       @Param("status") String status);
 }
