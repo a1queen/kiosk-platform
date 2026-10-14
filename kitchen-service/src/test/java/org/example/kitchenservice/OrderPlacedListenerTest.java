@@ -42,7 +42,7 @@ class OrderPlacedListenerTest {
 
         orderPlacedListener.onMessage(record);
 
-        verify(kitchenTicketService).handleKitchenTicket(event);
+        verify(kitchenTicketService).receiveOrder(event);
     }
 
     @Test

@@ -19,31 +19,49 @@ import java.util.UUID;
 public class KitchenTicket {
 
     @Id
-    @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private UUID orderId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private UUID eventId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private String orderNumber;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     @JdbcTypeCode(SqlTypes.JSON)
     private List<TicketItem> items;
 
     @Generated
-    @Column(nullable = false, insertable = false)
+    @Column(nullable = false, insertable = false, updatable = false)
     private Instant receivedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TicketStatus ticketStatus;
 
     public KitchenTicket(UUID orderId, UUID eventId, String orderNumber, List<TicketItem> items) {
         this.orderId = orderId;
         this.eventId = eventId;
         this.orderNumber = orderNumber;
         this.items = List.copyOf(items);
+        this.ticketStatus = TicketStatus.RECEIVED;
+    }
+
+    public void markAsPreparing() { moveTo(TicketStatus.RECEIVED, TicketStatus.PREPARING); }
+
+    public void markAsReady() { moveTo(TicketStatus.PREPARING, TicketStatus.READY); }
+
+    public void markAsCompleted() { moveTo(TicketStatus.READY, TicketStatus.COMPLETED); }
+
+    private void moveTo(TicketStatus expectedCurrent, TicketStatus target) {
+        if (ticketStatus != expectedCurrent) {
+            throw new TicketStateException("Only tickets with %s status can move to %s, current: %s"
+                    .formatted(expectedCurrent, target, ticketStatus));
+        }
+        this.ticketStatus = target;
     }
 
 }
