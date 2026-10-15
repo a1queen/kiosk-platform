@@ -21,7 +21,7 @@ public class KitchenTicket {
     @Id
     private UUID id;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false, unique = true)
     private UUID orderId;
 
     @Column(nullable = false, updatable = false)
@@ -58,8 +58,7 @@ public class KitchenTicket {
 
     private void moveTo(TicketStatus expectedCurrent, TicketStatus target) {
         if (ticketStatus != expectedCurrent) {
-            throw new TicketStateException("Only tickets with %s status can move to %s, current: %s"
-                    .formatted(expectedCurrent, target, ticketStatus));
+            throw new TicketStateException(expectedCurrent, target, ticketStatus);
         }
         this.ticketStatus = target;
     }

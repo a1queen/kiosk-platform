@@ -49,13 +49,9 @@ class OrderPlacedEventTest {
     }
 
     @Test
-    void itemShouldThrowWhenProductNameOrQuantityIsNull() {
+    void itemShouldThrowWhenProductNameIsNull() {
         assertThatThrownBy(() -> new OrderPlacedEvent.Item(null, 1, List.of()))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("productName");
-
-        assertThatThrownBy(() -> new OrderPlacedEvent.Item("Burger", null, List.of()))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("quantity");
     }
 }

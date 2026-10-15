@@ -15,39 +15,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TicketNotFoundException.class)
     public ProblemDetail handleTicketNotFoundException(TicketNotFoundException ex) {
         log.warn("Ticket not found: {}", ex.getMessage());
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.NOT_FOUND,
-                ex.getMessage()
-        );
-        problemDetail.setTitle("Ticket Not Found");
-        problemDetail.setType(URI.create("urn:problem-type:ticket-not-found"));
-        return problemDetail;
+        return createProblemDetail(HttpStatus.NOT_FOUND, "Ticket Not Found", ex.getMessage(), "ticket-not-found");
     }
 
     @ExceptionHandler(TicketStateException.class)
     public ProblemDetail handleTicketStateException(TicketStateException ex) {
         log.warn("Ticket state conflict: {}", ex.getMessage());
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.CONFLICT,
-                ex.getMessage()
-        );
-        problemDetail.setTitle("Ticket State Conflict");
-        problemDetail.setType(URI.create("urn:problem-type:ticket-state-conflict"));
-        return problemDetail;
+        return createProblemDetail(HttpStatus.CONFLICT, "Ticket State Conflict", ex.getMessage(), "ticket-state-conflict");
     }
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenericException(Exception ex) {
         log.error("Unhandled server error occurred", ex);
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+        return createProblemDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected internal error occurred"
+                "Internal Server Error",
+                "An unexpected internal error occurred",
+                "internal-server-error"
         );
-        problemDetail.setTitle("Internal Server Error");
-        problemDetail.setType(URI.create("urn:problem-type:internal-server-error"));
+    }
+
+    private ProblemDetail createProblemDetail(HttpStatus status, String title, String detail, String problemType) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+        problemDetail.setTitle(title);
+        problemDetail.setType(URI.create("urn:problem-type:" + problemType));
         return problemDetail;
     }
 }

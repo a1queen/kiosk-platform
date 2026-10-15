@@ -22,15 +22,20 @@ public class KitchenTicketService {
     @Transactional
     public void receiveOrder(OrderPlacedEvent event) {
         List<TicketItem> items = event.items().stream()
-                .map(i -> new TicketItem(i.productName(), i.quantity(), i.notes()))
+                .map(TicketItem::from)
                 .toList();
-        KitchenTicket ticket = new KitchenTicket(event.orderId(), event.eventId(), event.orderNumber(),
-                items);
-        int inserted = kitchenTicketRepository.insertIfAbsent(ticket.getOrderId(), ticket.getEventId(), ticket.getOrderNumber(), jsonMapper.writeValueAsString(ticket.getItems()), ticket.getTicketStatus().name());
+        String itemsJson = jsonMapper.writeValueAsString(items);
+        int inserted = kitchenTicketRepository.insertIfAbsent(
+                event.orderId(),
+                event.eventId(),
+                event.orderNumber(),
+                itemsJson,
+                TicketStatus.RECEIVED.name()
+        );
         if (inserted == 0) {
-            log.info("Duplicate order {} (orderId={}) ignored", ticket.getOrderNumber(), ticket.getOrderId());
+            log.info("Duplicate order {} (orderId={}) ignored", event.orderNumber(), event.orderId());
         } else {
-            log.info("Kitchen ticket created for order {} ({} items)", ticket.getOrderNumber(), ticket.getItems().size());
+            log.info("Kitchen ticket created for order {} ({} items)", event.orderNumber(), items.size());
         }
     }
 
@@ -50,7 +55,7 @@ public class KitchenTicketService {
     }
 
     private KitchenTicketResponse changeStatus(UUID ticketId, Consumer<KitchenTicket> stateTransition) {
-        KitchenTicket ticket = kitchenTicketRepository.findById(ticketId).orElseThrow(() -> new IllegalArgumentException("ticket not found"));
+        KitchenTicket ticket = kitchenTicketRepository.findById(ticketId).orElseThrow(() -> new TicketNotFoundException(ticketId));
         stateTransition.accept(ticket);
         log.info("Ticket for order {} moved to status {}", ticket.getOrderNumber(), ticket.getTicketStatus());
         return new KitchenTicketResponse(ticket);

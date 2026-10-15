@@ -20,6 +20,16 @@ class TicketItemTest {
     }
 
     @Test
+    void shouldCreateTicketItemFromOrderPlacedEventItem() {
+        OrderPlacedEvent.Item eventItem = new OrderPlacedEvent.Item("Burger", 2, List.of("No onions"));
+        TicketItem item = TicketItem.from(eventItem);
+
+        assertThat(item.productName()).isEqualTo("Burger");
+        assertThat(item.quantity()).isEqualTo(2);
+        assertThat(item.notes()).containsExactly("No onions");
+    }
+
+    @Test
     void shouldDefaultNullNotesToEmptyList() {
         TicketItem item = new TicketItem("Fries", 1, null);
 

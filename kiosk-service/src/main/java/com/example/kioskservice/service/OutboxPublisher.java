@@ -1,0 +1,61 @@
+package com.example.kioskservice.service;
+
+import com.example.kioskservice.model.OutboxEvent;
+import com.example.kioskservice.repository.OutboxEventRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class OutboxPublisher {
+
+    private static final String ORDERS_TOPIC = "orders";
+    private static final int BATCH_SIZE = 50;
+    private static final long KAFKA_ACK_TIMEOUT_SECONDS = 5;
+    private static final int MAX_ATTEMPTS = 10;
+    private static final String POLL_INTERVAL_MS = "500";
+
+    private final OutboxEventRepository outboxEventRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
+    @Scheduled(fixedDelayString = POLL_INTERVAL_MS)
+    @Transactional
+    public void publishPendingEvents() {
+        List<OutboxEvent> pendingEvents = outboxEventRepository.fetchPendingBatch(BATCH_SIZE);
+        if (pendingEvents.isEmpty()) {
+            return;
+        }
+
+        for (OutboxEvent event : pendingEvents) {
+            try {
+                kafkaTemplate.send(ORDERS_TOPIC, event.getAggregateId(), event.getPayload())
+                        .get(KAFKA_ACK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+                outboxEventRepository.delete(event);
+                log.info("Published and removed outbox event ID: {} for aggregate: {} to Kafka",
+                        event.getId(), event.getAggregateId());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                event.recordFailure(MAX_ATTEMPTS);
+                log.error("Thread interrupted while publishing outbox event ID: {}. Incremented attempts to {}. Stopping batch.",
+                        event.getId(), event.getAttempts(), e);
+                break;
+            } catch (ExecutionException | TimeoutException | RuntimeException e) {
+                event.recordFailure(MAX_ATTEMPTS);
+                log.error("Failed to publish outbox event ID: {} to Kafka. Incremented attempts to {}. Status: {}. Stopping batch.",
+                        event.getId(), event.getAttempts(), event.getStatus(), e);
+                break;
+            }
+        }
+    }
+}

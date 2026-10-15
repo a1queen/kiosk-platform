@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -112,9 +111,9 @@ class KitchenTicketServiceTest {
         UUID nonExistentId = UUID.randomUUID();
         when(kitchenTicketRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        assertThatIllegalArgumentException()
-                .isThrownBy(() -> kitchenTicketService.markAsPreparing(nonExistentId))
-                .withMessageContaining("ticket not found");
+        assertThatThrownBy(() -> kitchenTicketService.markAsPreparing(nonExistentId))
+                .isInstanceOf(TicketNotFoundException.class)
+                .hasMessage("Ticket not found: " + nonExistentId);
     }
 
     @Test
