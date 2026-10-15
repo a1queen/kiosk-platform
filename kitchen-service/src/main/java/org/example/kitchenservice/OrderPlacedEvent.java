@@ -21,12 +21,11 @@ public record OrderPlacedEvent(
 
     public record Item(
             String productName,
-            Integer quantity,
+            int quantity,
             List<String> notes
     ) {
         public Item {
             Objects.requireNonNull(productName, "productName");
-            Objects.requireNonNull(quantity, "quantity");
             notes = notes != null ? List.copyOf(notes) : List.of();
         }
     }
