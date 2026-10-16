@@ -18,21 +18,18 @@ public class KitchenTicketController {
     private final KitchenTicketService kitchenTicketService;
 
     @PatchMapping("/{ticketId}/start-preparation")
-    public ResponseEntity<KitchenTicketResponse> changeStatusToPreparing(@PathVariable UUID ticketId) {
-        KitchenTicketResponse response = kitchenTicketService.markAsPreparing(ticketId);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<KitchenTicketResponse> startPreparation(@PathVariable UUID ticketId) {
+        return ResponseEntity.ok(kitchenTicketService.markAsPreparing(ticketId));
     }
 
     @PatchMapping("/{ticketId}/mark-ready")
-    public ResponseEntity<KitchenTicketResponse> changeStatusToReady(@PathVariable UUID ticketId) {
-        KitchenTicketResponse response = kitchenTicketService.markAsReady(ticketId);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<KitchenTicketResponse> markReady(@PathVariable UUID ticketId) {
+        return ResponseEntity.ok(kitchenTicketService.markAsReady(ticketId));
     }
 
     @PatchMapping("/{ticketId}/complete")
-    public ResponseEntity<KitchenTicketResponse> changeStatusToCompleted(@PathVariable UUID ticketId) {
-        KitchenTicketResponse response = kitchenTicketService.markAsCompleted(ticketId);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<KitchenTicketResponse> complete(@PathVariable UUID ticketId) {
+        return ResponseEntity.ok(kitchenTicketService.markAsCompleted(ticketId));
     }
 
 }
