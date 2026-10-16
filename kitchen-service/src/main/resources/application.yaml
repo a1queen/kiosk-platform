@@ -19,6 +19,9 @@ spring:
       enable-auto-commit: false
     listener:
       ack-mode: record
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/kitchen_db}
     username: ${SPRING_DATASOURCE_USERNAME:kitchen_user}

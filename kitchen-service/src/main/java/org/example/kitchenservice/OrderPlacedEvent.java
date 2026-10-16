@@ -26,6 +26,9 @@ public record OrderPlacedEvent(
     ) {
         public Item {
             Objects.requireNonNull(productName, "productName");
+            if (quantity <= 0) {
+                throw new IllegalArgumentException("quantity must be positive, but was " + quantity);
+            }
             notes = notes != null ? List.copyOf(notes) : List.of();
         }
     }
