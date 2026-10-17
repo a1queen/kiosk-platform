@@ -18,6 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class KitchenTicket {
 
+    @Generated
     @Id
     private UUID id;
 
@@ -27,7 +28,7 @@ public class KitchenTicket {
     @Column(nullable = false, updatable = false)
     private UUID eventId;
 
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false, length = 32)
     private String orderNumber;
 
     @Column(nullable = false, updatable = false)
@@ -39,7 +40,7 @@ public class KitchenTicket {
     private Instant receivedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 32)
     private TicketStatus ticketStatus;
 
     public KitchenTicket(UUID orderId, UUID eventId, String orderNumber, List<TicketItem> items) {

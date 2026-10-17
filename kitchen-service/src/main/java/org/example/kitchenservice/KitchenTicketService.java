@@ -1,6 +1,7 @@
 package org.example.kitchenservice;
 
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ import java.util.function.Consumer;
 public class KitchenTicketService {
     private final JsonMapper jsonMapper;
     private final KitchenTicketRepository kitchenTicketRepository;
-
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void receiveOrder(OrderPlacedEvent event) {
@@ -51,7 +52,9 @@ public class KitchenTicketService {
 
     @Transactional
     public KitchenTicketResponse markAsCompleted(UUID ticketId) {
-        return changeStatus(ticketId, KitchenTicket::markAsCompleted);
+        KitchenTicketResponse response = changeStatus(ticketId, KitchenTicket::markAsCompleted);
+        eventPublisher.publishEvent(new OrderCompletedEvent(response.orderId()));
+        return response;
     }
 
     private KitchenTicketResponse changeStatus(UUID ticketId, Consumer<KitchenTicket> stateTransition) {
