@@ -3,6 +3,7 @@ package com.example.kioskservice.service;
 import com.example.kioskservice.dto.OrderResponse;
 import com.example.kioskservice.dto.RequestedOrder;
 import com.example.kioskservice.exception.OrderNotFoundException;
+import com.example.kioskservice.kafka.OrderCompletedEvent;
 import com.example.kioskservice.kafka.OrderPlacedEvent;
 import com.example.kioskservice.model.Order;
 import com.example.kioskservice.model.OrderItem;
@@ -50,7 +51,7 @@ public class OrderService {
         String payload = serializePayload(eventPayload);
 
         OutboxEvent outboxEvent = new OutboxEvent(
-                eventPayload.eventId(), // synchronized UUID
+                eventPayload.eventId(),
                 "ORDER",
                 savedOrder.getId().toString(),
                 "OrderPlacedEvent",
@@ -78,5 +79,13 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(UUID id) {
         return orderRepository.findById(id).map(OrderResponse::new).orElseThrow(() -> new OrderNotFoundException(id));
+    }
+
+    @Transactional
+    public void finishOrder(OrderCompletedEvent event) {
+        Order order = orderRepository.findById(event.orderId())
+                .orElseThrow(() -> new OrderNotFoundException(event.orderId()));
+        order.markAsCompleted();
+        log.info("Order {} marked as completed", order.getId());
     }
 }

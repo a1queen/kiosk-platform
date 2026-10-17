@@ -17,7 +17,6 @@ class OrderStatusTest {
 
         assertThat(statuses).containsExactly(
                 OrderStatus.CREATED,
-                OrderStatus.PREPARING,
                 OrderStatus.COMPLETED
         );
     }

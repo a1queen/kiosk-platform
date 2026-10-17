@@ -3,8 +3,10 @@ package com.example.kioskservice.service;
 import com.example.kioskservice.dto.OrderResponse;
 import com.example.kioskservice.dto.RequestedOrder;
 import com.example.kioskservice.exception.OrderNotFoundException;
+import com.example.kioskservice.kafka.OrderCompletedEvent;
 import com.example.kioskservice.model.Order;
 import com.example.kioskservice.model.OrderItem;
+import com.example.kioskservice.model.OrderStatus;
 import com.example.kioskservice.model.OutboxEvent;
 import com.example.kioskservice.repository.OrderRepository;
 import com.example.kioskservice.repository.OutboxEventRepository;
@@ -35,7 +37,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
@@ -175,6 +176,40 @@ class OrderServiceTest {
         given(orderRepository.findById(id)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrderById(id))
+                .isInstanceOf(OrderNotFoundException.class)
+                .hasMessage("Order not found with ID: " + id);
+
+        verify(orderRepository).findById(id);
+    }
+
+    @Test
+    @DisplayName("Should successfully finish order and mark it as COMPLETED")
+    void shouldSuccessfullyFinishOrder() throws Exception {
+        UUID id = UUID.randomUUID();
+        OrderItem item = new OrderItem("Burger", 1, null);
+        Order order = new Order("Z-001", new BigDecimal("25.00"), List.of(item));
+        Field idField = Order.class.getDeclaredField("id");
+        idField.setAccessible(true);
+        idField.set(order, id);
+
+        given(orderRepository.findById(id)).willReturn(Optional.of(order));
+
+        OrderCompletedEvent event = new OrderCompletedEvent(UUID.randomUUID(), id);
+        orderService.finishOrder(event);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        verify(orderRepository).findById(id);
+    }
+
+    @Test
+    @DisplayName("Should throw OrderNotFoundException when finishing non-existent order")
+    void shouldThrowOrderNotFoundExceptionWhenFinishingNonExistentOrder() {
+        UUID id = UUID.randomUUID();
+        given(orderRepository.findById(id)).willReturn(Optional.empty());
+
+        OrderCompletedEvent event = new OrderCompletedEvent(UUID.randomUUID(), id);
+
+        assertThatThrownBy(() -> orderService.finishOrder(event))
                 .isInstanceOf(OrderNotFoundException.class)
                 .hasMessage("Order not found with ID: " + id);
 
