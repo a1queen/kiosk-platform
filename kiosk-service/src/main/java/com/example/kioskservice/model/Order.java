@@ -1,7 +1,6 @@
 package com.example.kioskservice.model;
 
 import com.example.kioskservice.exception.DomainValidationException;
-import com.example.kioskservice.exception.OrderStateException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -72,20 +71,8 @@ public class Order {
         item.setOrder(this);
     }
 
-    public void markAsPreparing() {
-        moveTo(OrderStatus.CREATED, OrderStatus.PREPARING);
-    }
-
     public void markAsCompleted() {
-        moveTo(OrderStatus.PREPARING, OrderStatus.COMPLETED);
-    }
-
-    private void moveTo(OrderStatus expectedCurrent, OrderStatus target) {
-        if (this.status != expectedCurrent) {
-            throw new OrderStateException("Only orders with %s status can move to %s"
-                    .formatted(expectedCurrent, target));
-        }
-        this.status = target;
+        this.status = OrderStatus.COMPLETED;
     }
 
     public List<OrderItem> getItems() {

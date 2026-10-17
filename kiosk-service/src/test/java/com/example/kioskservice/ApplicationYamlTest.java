@@ -30,6 +30,14 @@ class ApplicationYamlTest {
                 .isEqualTo("org.apache.kafka.common.serialization.StringSerializer");
         assertThat(properties.getProperty("spring.kafka.producer.value-serializer"))
                 .isEqualTo("org.apache.kafka.common.serialization.StringSerializer");
+        assertThat(properties.getProperty("spring.kafka.consumer.group-id")).isEqualTo("kiosk-order-status-group");
+        assertThat(properties.getProperty("spring.kafka.consumer.auto-offset-reset")).isEqualTo("earliest");
+        assertThat(properties.getProperty("spring.kafka.consumer.key-deserializer"))
+                .isEqualTo("org.apache.kafka.common.serialization.StringDeserializer");
+        assertThat(properties.getProperty("spring.kafka.consumer.value-deserializer"))
+                .isEqualTo("org.apache.kafka.common.serialization.StringDeserializer");
+        assertThat(properties.getProperty("spring.kafka.consumer.enable-auto-commit")).isEqualTo("false");
+        assertThat(properties.getProperty("spring.kafka.listener.ack-mode")).isEqualTo("record");
 
         // Datasource properties
         assertThat(properties.getProperty("spring.datasource.url"))

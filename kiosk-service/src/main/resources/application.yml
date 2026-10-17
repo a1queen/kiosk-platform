@@ -27,6 +27,14 @@ spring:
         max.block.ms: 2000
         request.timeout.ms: 2000
         delivery.timeout.ms: 3000
+    consumer:
+      group-id: kiosk-order-status-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: false
+    listener:
+      ack-mode: record
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/kiosk_db}
     username: ${SPRING_DATASOURCE_USERNAME:kiosk_user}

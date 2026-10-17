@@ -50,7 +50,7 @@ class OrderResponseTest {
         UUID id = UUID.randomUUID();
         OrderResponse response1 = new OrderResponse(id, "Z-001", OrderStatus.CREATED);
         OrderResponse response2 = new OrderResponse(id, "Z-001", OrderStatus.CREATED);
-        OrderResponse different = new OrderResponse(UUID.randomUUID(), "Z-002", OrderStatus.PREPARING);
+        OrderResponse different = new OrderResponse(UUID.randomUUID(), "Z-002", OrderStatus.COMPLETED);
 
         assertThat(response1).isEqualTo(response2)
                 .hasSameHashCodeAs(response2)
