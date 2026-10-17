@@ -1,4 +1,8 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.dto;
+
+import org.example.kitchenservice.model.KitchenTicket;
+import org.example.kitchenservice.model.TicketItem;
+import org.example.kitchenservice.model.TicketStatus;
 
 import java.time.Instant;
 import java.util.List;

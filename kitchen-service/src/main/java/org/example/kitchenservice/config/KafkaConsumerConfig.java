@@ -1,4 +1,4 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;

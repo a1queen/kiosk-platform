@@ -1,6 +1,7 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.service;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.example.kitchenservice.kafka.OrderPlacedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

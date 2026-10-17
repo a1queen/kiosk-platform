@@ -1,4 +1,6 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.exception;
+
+import org.example.kitchenservice.model.TicketStatus;
 
 public class TicketStateException extends IllegalStateException {
     public TicketStateException(String message) {

@@ -1,4 +1,4 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.kafka;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

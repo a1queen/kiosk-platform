@@ -1,11 +1,18 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.service;
 
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.kitchenservice.dto.KitchenTicketResponse;
+import org.example.kitchenservice.exception.TicketNotFoundException;
+import org.example.kitchenservice.kafka.OrderCompletedEvent;
+import org.example.kitchenservice.kafka.OrderPlacedEvent;
+import org.example.kitchenservice.model.KitchenTicket;
+import org.example.kitchenservice.model.TicketItem;
+import org.example.kitchenservice.model.TicketStatus;
+import org.example.kitchenservice.repository.KitchenTicketRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -58,11 +65,10 @@ public class KitchenTicketService {
     }
 
     private KitchenTicketResponse changeStatus(UUID ticketId, Consumer<KitchenTicket> stateTransition) {
-        KitchenTicket ticket = kitchenTicketRepository.findById(ticketId).orElseThrow(() -> new TicketNotFoundException(ticketId));
+        KitchenTicket ticket = kitchenTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new TicketNotFoundException(ticketId));
         stateTransition.accept(ticket);
         log.info("Ticket for order {} moved to status {}", ticket.getOrderNumber(), ticket.getTicketStatus());
         return new KitchenTicketResponse(ticket);
     }
-
-
 }

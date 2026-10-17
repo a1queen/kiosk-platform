@@ -1,6 +1,8 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.kitchenservice.dto.KitchenTicketResponse;
+import org.example.kitchenservice.service.KitchenTicketService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,5 +31,4 @@ public class KitchenTicketController {
     public ResponseEntity<KitchenTicketResponse> complete(@PathVariable UUID ticketId) {
         return ResponseEntity.ok(kitchenTicketService.markAsCompleted(ticketId));
     }
-
 }

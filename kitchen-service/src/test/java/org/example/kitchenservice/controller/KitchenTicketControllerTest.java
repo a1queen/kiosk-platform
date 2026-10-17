@@ -1,5 +1,9 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.controller;
 
+import org.example.kitchenservice.dto.KitchenTicketResponse;
+import org.example.kitchenservice.model.TicketItem;
+import org.example.kitchenservice.model.TicketStatus;
+import org.example.kitchenservice.service.KitchenTicketService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

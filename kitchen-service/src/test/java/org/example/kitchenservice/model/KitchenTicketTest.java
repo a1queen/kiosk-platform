@@ -1,4 +1,4 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.model;
 
 import org.junit.jupiter.api.Test;
 

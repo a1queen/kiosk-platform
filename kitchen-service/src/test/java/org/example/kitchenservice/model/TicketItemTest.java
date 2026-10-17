@@ -1,5 +1,6 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.model;
 
+import org.example.kitchenservice.kafka.OrderPlacedEvent;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

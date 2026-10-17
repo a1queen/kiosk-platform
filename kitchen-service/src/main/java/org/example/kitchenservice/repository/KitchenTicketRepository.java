@@ -1,5 +1,6 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.repository;
 
+import org.example.kitchenservice.model.KitchenTicket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -23,7 +24,4 @@ public interface KitchenTicketRepository extends JpaRepository<KitchenTicket, UU
                        @Param("orderNumber") String orderNumber,
                        @Param("items") String items,
                        @Param("ticketStatus") String ticketStatus);
-
-
-
 }

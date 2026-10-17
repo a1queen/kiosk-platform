@@ -1,11 +1,21 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.service;
 
+import org.example.kitchenservice.dto.KitchenTicketResponse;
+import org.example.kitchenservice.exception.TicketNotFoundException;
+import org.example.kitchenservice.exception.TicketStateException;
+import org.example.kitchenservice.kafka.OrderCompletedEvent;
+import org.example.kitchenservice.kafka.OrderPlacedEvent;
+import org.example.kitchenservice.model.KitchenTicket;
+import org.example.kitchenservice.model.TicketItem;
+import org.example.kitchenservice.model.TicketStatus;
+import org.example.kitchenservice.repository.KitchenTicketRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -29,11 +39,14 @@ class KitchenTicketServiceTest {
     @Mock
     private KitchenTicketRepository kitchenTicketRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private KitchenTicketService kitchenTicketService;
 
     @BeforeEach
     void setUp() {
-        kitchenTicketService = new KitchenTicketService(jsonMapper, kitchenTicketRepository);
+        kitchenTicketService = new KitchenTicketService(jsonMapper, kitchenTicketRepository, eventPublisher);
     }
 
     @Test
@@ -104,6 +117,11 @@ class KitchenTicketServiceTest {
 
         assertThat(response.ticketStatus()).isEqualTo(TicketStatus.COMPLETED);
         assertThat(ticket.getTicketStatus()).isEqualTo(TicketStatus.COMPLETED);
+
+        ArgumentCaptor<OrderCompletedEvent> eventCaptor = ArgumentCaptor.forClass(OrderCompletedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().orderId()).isEqualTo(ticket.getOrderId());
+        assertThat(eventCaptor.getValue().eventId()).isNotNull();
     }
 
     @Test

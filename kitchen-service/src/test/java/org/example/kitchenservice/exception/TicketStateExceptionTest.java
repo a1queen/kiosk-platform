@@ -1,5 +1,6 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.exception;
 
+import org.example.kitchenservice.model.TicketStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

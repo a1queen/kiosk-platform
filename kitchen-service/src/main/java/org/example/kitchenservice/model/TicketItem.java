@@ -1,4 +1,6 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.model;
+
+import org.example.kitchenservice.kafka.OrderPlacedEvent;
 
 import java.util.List;
 

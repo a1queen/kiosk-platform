@@ -1,9 +1,10 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.model;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.example.kitchenservice.exception.TicketStateException;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -63,5 +64,4 @@ public class KitchenTicket {
         }
         this.ticketStatus = target;
     }
-
 }

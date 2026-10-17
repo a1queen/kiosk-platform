@@ -1,5 +1,4 @@
-package org.example.kitchenservice;
-
+package org.example.kitchenservice.kafka;
 
 import java.util.List;
 import java.util.Objects;

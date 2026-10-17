@@ -1,4 +1,4 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.kafka;
 
 import java.util.Objects;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.exception;
 
 import java.util.UUID;
 

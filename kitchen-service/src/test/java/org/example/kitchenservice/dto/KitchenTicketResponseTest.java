@@ -1,5 +1,8 @@
-package org.example.kitchenservice;
+package org.example.kitchenservice.dto;
 
+import org.example.kitchenservice.model.KitchenTicket;
+import org.example.kitchenservice.model.TicketItem;
+import org.example.kitchenservice.model.TicketStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
