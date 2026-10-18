@@ -5,13 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.Optional;
 import java.util.UUID;
 
 public interface KitchenTicketRepository extends JpaRepository<KitchenTicket, UUID> {
-
-    Optional<KitchenTicket> findByOrderId(UUID orderId);
 
     @Modifying
     @Query(value = """

@@ -32,7 +32,7 @@ public class OrderItem {
     private String productName;
 
     @Column(nullable = false)
-    private Integer quantity;
+    private int quantity;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "notes", nullable = false, columnDefinition = "text[]")

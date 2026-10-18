@@ -104,8 +104,8 @@ class OrderServiceTest {
     }
     
     @Test
-    @DisplayName("Should wrap JacksonException in RuntimeException during payload serialization")
-    void shouldWrapJacksonExceptionInRuntimeExceptionWhenSerializationFails() throws Exception {
+    @DisplayName("Should propagate JacksonException during payload serialization")
+    void shouldPropagateJacksonExceptionWhenSerializationFails() throws Exception {
         // given
         RequestedOrder.Item itemDto = new RequestedOrder.Item("Burger", 2, null);
         RequestedOrder request = new RequestedOrder(new BigDecimal("25.00"), List.of(itemDto));
@@ -125,9 +125,7 @@ class OrderServiceTest {
 
         // when & then
         assertThatThrownBy(() -> orderService.placeOrder(request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageStartingWith("Failed to serialize outbox event payload")
-                .hasCause(jacksonError);
+                .isSameAs(jacksonError);
     }
 
     @Test

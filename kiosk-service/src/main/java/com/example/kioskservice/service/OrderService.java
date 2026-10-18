@@ -48,7 +48,7 @@ public class OrderService {
         log.info("Order successfully persisted with ID: {} and number: {}", savedOrder.getId(), savedOrder.getOrderNumber());
 
         OrderPlacedEvent eventPayload = new OrderPlacedEvent(savedOrder);
-        String payload = serializePayload(eventPayload);
+        String payload = jsonMapper.writeValueAsString(eventPayload);
 
         OutboxEvent outboxEvent = new OutboxEvent(
                 eventPayload.eventId(),
@@ -61,14 +61,6 @@ public class OrderService {
         log.info("Outbox event created for order ID: {} with eventId: {}", savedOrder.getId(), eventPayload.eventId());
 
         return new OrderResponse(savedOrder);
-    }
-
-    private String serializePayload(Object event) {
-        try {
-            return jsonMapper.writeValueAsString(event);
-        } catch (JacksonException e) {
-            throw new RuntimeException("Failed to serialize outbox event payload", e);
-        }
     }
 
     @Transactional(readOnly = true)
