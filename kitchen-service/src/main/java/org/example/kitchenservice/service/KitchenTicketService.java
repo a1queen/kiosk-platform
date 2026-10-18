@@ -11,6 +11,8 @@ import org.example.kitchenservice.model.TicketItem;
 import org.example.kitchenservice.model.TicketStatus;
 import org.example.kitchenservice.repository.KitchenTicketRepository;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
@@ -64,11 +66,25 @@ public class KitchenTicketService {
         return response;
     }
 
+    @Transactional(readOnly = true)
+    public Page<KitchenTicketResponse> getTickets(Pageable pageable) {
+        return kitchenTicketRepository.findAll(pageable).map(KitchenTicketResponse::new);
+    }
+
+    @Transactional(readOnly = true)
+    public KitchenTicketResponse getTicketById(UUID ticketId) {
+        return new KitchenTicketResponse(findTicketOrThrow(ticketId));
+    }
+
     private KitchenTicketResponse changeStatus(UUID ticketId, Consumer<KitchenTicket> stateTransition) {
-        KitchenTicket ticket = kitchenTicketRepository.findById(ticketId)
-                .orElseThrow(() -> new TicketNotFoundException(ticketId));
+        KitchenTicket ticket = findTicketOrThrow(ticketId);
         stateTransition.accept(ticket);
         log.info("Ticket for order {} moved to status {}", ticket.getOrderNumber(), ticket.getTicketStatus());
         return new KitchenTicketResponse(ticket);
+    }
+
+    private KitchenTicket findTicketOrThrow(UUID ticketId) {
+        return kitchenTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new TicketNotFoundException(ticketId));
     }
 }
