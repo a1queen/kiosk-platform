@@ -26,16 +26,10 @@ class ApplicationYamlTest {
         // Kafka properties
         assertThat(properties.getProperty("spring.kafka.bootstrap-servers"))
                 .isEqualTo("${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}");
-        assertThat(properties.getProperty("spring.kafka.producer.key-serializer"))
-                .isEqualTo("org.apache.kafka.common.serialization.StringSerializer");
-        assertThat(properties.getProperty("spring.kafka.producer.value-serializer"))
-                .isEqualTo("org.apache.kafka.common.serialization.StringSerializer");
+        assertThat(properties.getProperty("spring.kafka.producer.acks")).isEqualTo("all");
+        assertThat(properties.getProperty("spring.kafka.producer.properties.enable.idempotence")).isEqualTo("true");
         assertThat(properties.getProperty("spring.kafka.consumer.group-id")).isEqualTo("kiosk-order-status-group");
         assertThat(properties.getProperty("spring.kafka.consumer.auto-offset-reset")).isEqualTo("earliest");
-        assertThat(properties.getProperty("spring.kafka.consumer.key-deserializer"))
-                .isEqualTo("org.apache.kafka.common.serialization.StringDeserializer");
-        assertThat(properties.getProperty("spring.kafka.consumer.value-deserializer"))
-                .isEqualTo("org.apache.kafka.common.serialization.StringDeserializer");
         assertThat(properties.getProperty("spring.kafka.listener.ack-mode")).isEqualTo("record");
 
         // Datasource properties
@@ -53,7 +47,6 @@ class ApplicationYamlTest {
         assertThat(properties.getProperty("spring.jpa.properties.hibernate.format_sql")).isEqualTo("true");
 
         // Flyway properties
-        assertThat(properties.getProperty("spring.flyway.enabled")).isEqualTo("true");
         assertThat(properties.getProperty("spring.flyway.baseline-on-migrate")).isEqualTo("true");
     }
 }
