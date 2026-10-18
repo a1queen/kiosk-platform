@@ -27,7 +27,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderResponse> sendOrder(@RequestBody @Valid RequestedOrder order) {
+    public ResponseEntity<OrderResponse> placeOrder(@RequestBody @Valid RequestedOrder order) {
         log.info("Received request to place order with {} items", order.items().size());
         OrderResponse response = orderService.placeOrder(order);
 
@@ -41,14 +41,14 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<PagedModel<OrderResponse>> getOrders(
+    public PagedModel<OrderResponse> getOrders(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<OrderResponse> page = orderService.getOrders(pageable);
-        return ResponseEntity.ok(new PagedModel<>(page));
+        return new PagedModel<>(page);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable UUID id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
+    public OrderResponse getOrderById(@PathVariable UUID id) {
+        return orderService.getOrderById(id);
     }
 }

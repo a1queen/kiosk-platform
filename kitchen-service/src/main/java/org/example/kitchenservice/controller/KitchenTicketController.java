@@ -34,13 +34,13 @@ public class KitchenTicketController {
     }
 
     @GetMapping
-    public ResponseEntity<PagedModel<KitchenTicketResponse>> getTickets(@PageableDefault(size = 20, sort = "receivedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    public PagedModel<KitchenTicketResponse> getTickets(@PageableDefault(size = 20, sort = "receivedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<KitchenTicketResponse> page = kitchenTicketService.getTickets(pageable);
-        return ResponseEntity.ok(new PagedModel<>(page));
+        return new PagedModel<>(page);
     }
 
     @GetMapping("/{ticketId}")
-    public ResponseEntity<KitchenTicketResponse> getSingleTicket(@PathVariable UUID ticketId) {
-        return ResponseEntity.ok(kitchenTicketService.getTicketById(ticketId));
+    public KitchenTicketResponse getSingleTicket(@PathVariable UUID ticketId) {
+        return kitchenTicketService.getTicketById(ticketId);
     }
 }

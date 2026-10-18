@@ -61,12 +61,6 @@
 			<artifactId>spring-boot-starter-kafka</artifactId>
 		</dependency>
 
-		<!-- Jackson JSON Serialization -->
-		<dependency>
-			<groupId>tools.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-		</dependency>
-
 		<!-- Dev Tools & Lombok -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

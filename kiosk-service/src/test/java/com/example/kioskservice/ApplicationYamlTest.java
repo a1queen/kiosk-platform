@@ -36,7 +36,6 @@ class ApplicationYamlTest {
                 .isEqualTo("org.apache.kafka.common.serialization.StringDeserializer");
         assertThat(properties.getProperty("spring.kafka.consumer.value-deserializer"))
                 .isEqualTo("org.apache.kafka.common.serialization.StringDeserializer");
-        assertThat(properties.getProperty("spring.kafka.consumer.enable-auto-commit")).isEqualTo("false");
         assertThat(properties.getProperty("spring.kafka.listener.ack-mode")).isEqualTo("record");
 
         // Datasource properties

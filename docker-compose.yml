@@ -1,5 +1,5 @@
 services:
-  postgres:
+  kiosk-db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: kiosk_db
@@ -57,18 +57,15 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/kiosk_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://kiosk-db:5432/kiosk_db
       SPRING_DATASOURCE_USERNAME: kiosk_user
       SPRING_DATASOURCE_PASSWORD: kiosk_password
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
-      postgres:
+      kiosk-db:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
-
-
 
   kitchen-db:
     image: postgres:16-alpine

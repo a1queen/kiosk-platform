@@ -75,7 +75,7 @@ class OrderControllerTest {
 
         given(orderService.placeOrder(requestedOrder)).willReturn(serviceResponse);
 
-        ResponseEntity<OrderResponse> response = orderController.sendOrder(requestedOrder);
+        ResponseEntity<OrderResponse> response = orderController.placeOrder(requestedOrder);
 
         assertThat(response.getStatusCode().value()).isEqualTo(201);
         assertThat(response.getHeaders().getLocation()).isEqualTo(URI.create("http://localhost/orders/" + orderId));
