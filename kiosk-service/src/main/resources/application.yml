@@ -14,13 +14,10 @@ spring:
   data:
     web:
       pageable:
-        serialization-mode: via-dto
         max-page-size: 50
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       properties:
         enable.idempotence: true
@@ -30,9 +27,6 @@ spring:
     consumer:
       group-id: kiosk-order-status-group
       auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      enable-auto-commit: false
     listener:
       ack-mode: record
   datasource:
@@ -49,5 +43,4 @@ spring:
       hibernate:
         format_sql: true
   flyway:
-    enabled: true
     baseline-on-migrate: true

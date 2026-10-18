@@ -61,7 +61,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        log.warn("Message not readable: {}", ex.getMessage());
+        log.warn("Malformed JSON request received: {}", ex.getMessage());
         return createProblemDetail(
                 HttpStatus.BAD_REQUEST,
                 "Bad Request",
