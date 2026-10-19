@@ -7,14 +7,9 @@
 [![Docker](https://img.shields.io/badge/Docker%20Compose-Ready-blue.svg)](https://www.docker.com/)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-
- Event-driven order processing for self-service kiosks: Spring Boot 4 microservices (kiosk + kitchen) communicating via Kafka with transactional outbox, idempotent consumer and dead-letter topic. PostgreSQL, Flyway, Docker Compose.
+An event-driven microservices backend that handles real-time restaurant order placement from self-service kiosks and manages kitchen preparation workflows. Built with **Spring Boot 4**, **Apache Kafka**, and **PostgreSQL**, the system demonstrates production-grade reliability patterns for distributed architectures.
 
 ---
-## Overview
-
-A customer places an order at a self-service kiosk. kiosk-service stores it and publishes an OrderPlacedEvent; kitchen-service turns it into a kitchen ticket that the staff move through preparation until the order is handed over.
-
 ## Highlights
 
 **Transactional outbox:**  an order and its event are written in one database transaction, so there are no lost or "ghost" events between the commit and the Kafka publish.\
@@ -24,7 +19,89 @@ A customer places an order at a self-service kiosk. kiosk-service stores it and 
 **Versioned schema:** Flyway migrations, validated by Hibernate on startup.\
 **One command to run everything**: `docker compose up`.
 
-## 🏛️ Architektura Systemu
+## 🏛️ System Architecture & Event Flow
+
+The system consists of two collaborating microservices: **Kiosk Service** (handling customer order creation and outbox publishing) and **Kitchen Service** (managing kitchen tickets and preparation state transitions).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Kiosk Client
+    participant KC as Kiosk Service<br/>(OrderController / OrderService)
+    participant KDB as Kiosk DB<br/>(PostgreSQL)
+    participant OP as OutboxPublisher<br/>(@Scheduled)
+    participant Kafka as Apache Kafka
+    participant KL as Kitchen Service<br/>(OrderPlacedListener / Service)
+    participant KTDB as Kitchen DB<br/>(PostgreSQL)
+    actor Staff as Kitchen Staff
+    participant KEP as KitchenEventPublisher<br/>(AFTER_COMMIT)
+
+    Client->>KC: POST /orders (RequestedOrder)
+    activate KC
+    KC->>KDB: Begin TX: INSERT Order, OrderItems & OutboxEvent (PENDING)
+    KDB-->>KC: Commit TX
+    KC-->>Client: 201 Created (OrderResponse + Location header)
+    deactivate KC
+
+    loop Every 500ms (Batch up to 50)
+        OP->>KDB: SELECT PENDING events (FOR UPDATE SKIP LOCKED)
+        KDB-->>OP: Pending OutboxEvents
+        alt Publish Success
+            OP->>Kafka: Publish OrderPlacedEvent to "orders" topic
+            OP->>KDB: DELETE OutboxEvent
+        else Publish Failure
+            OP->>KDB: Increment attempts (mark FAILED at maxAttempts = 10)
+        end
+    end
+
+    Kafka->>KL: Consume from "orders" topic
+    alt Valid Message
+        KL->>KTDB: INSERT INTO kitchen_tickets ON CONFLICT (order_id) DO NOTHING
+    else Invalid Payload / Retries Exhausted
+        KL->>Kafka: DeadLetterPublishingRecoverer routes to "orders-dlt"
+    end
+
+    Staff->>KL: PATCH /tickets/{ticketId}/start-preparation
+    KL->>KTDB: Update status: RECEIVED -> PREPARING
+    Staff->>KL: PATCH /tickets/{ticketId}/mark-ready
+    KL->>KTDB: Update status: PREPARING -> READY
+    Staff->>KL: PATCH /tickets/{ticketId}/complete
+    activate KL
+    KL->>KTDB: Update status: READY -> COMPLETED (Commit TX)
+    KL->>KEP: Trigger OrderCompletedEvent (TransactionPhase.AFTER_COMMIT)
+    deactivate KL
+    KEP->>Kafka: Publish OrderCompletedEvent to "orders-completed" topic
+```
+
+---
+
+## Architectural & Reliability Patterns
+
+* **Transactional Outbox Pattern (`KioskService`):** Placing an order persists both the `Order` aggregate (with its `OrderItem` collection) and an `OutboxEvent` record within a single ACID database transaction, preventing dual-write inconsistencies. A scheduled worker (`OutboxPublisher`) polls the `outbox_events` table using pessimistic locking (`FOR UPDATE SKIP LOCKED`) backed by a PostgreSQL partial index (`WHERE status = 'PENDING'`), publishes events to the `orders` Kafka topic, and tracks retry attempts (`attempts`, transitioning to `FAILED` at 10 attempts).
+* **Idempotent Consumer (`kitchenservice`):** `OrderPlacedListener` processes incoming `OrderPlacedEvent` messages idempotently by executing a native PostgreSQL `INSERT INTO kitchen_tickets ... ON CONFLICT (order_id) DO NOTHING` query, safely ignoring duplicate deliveries.
+* **Dead-Letter Topic (DLT) & Retry Policy (`kitchenservice`):** `KafkaConsumerConfig` configures a `DefaultErrorHandler` with a `DeadLetterPublishingRecoverer`[cite: 48]. Transient errors are retried via `FixedBackOff` (2 retries with a 2,000 ms interval), whereas non-retryable deserialization and validation exceptions (`JacksonException`, `NullPointerException`, `IllegalArgumentException`) are immediately routed to the `orders-dlt` topic.
+* **Post-Commit Event Publishing (`kitchenservice`):** Completing a kitchen ticket triggers `KitchenEventPublisher` annotated with `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`, ensuring that `OrderCompletedEvent` is published to the `orders-completed` topic only after the database transaction commits.
+* **Rich Domain Models & State Machines:** Both `Order` (`CREATED` -> `PREPARING` -> `COMPLETED`) and `KitchenTicket` (`RECEIVED` -> `PREPARING` -> `READY` -> `COMPLETED`) enforce state transition invariants and throw domain exceptions (`OrderStateException`, `TicketStateException`) mapped to HTTP `409 Conflict`.
+* **Daily Sequential Order Numbering (`OrderNumberGenerator`):** Generates human-readable order numbers (`Z-001`, `Z-002`, etc.) and automatically resets the counter to `1` at midnight every day.
+
+Architecture
+```mermaid
+flowchart LR
+    Client(["Kiosk client"]) -->|"POST /orders"| Kiosk["kiosk-service"]
+    Kiosk -->|"order + outbox event (one transaction)"| KioskDB[("kiosk_db")]
+    Kiosk -.->|"outbox publisher"| Orders{{"topic: orders"}}
+    Orders --> Kitchen["kitchen-service"]
+    Kitchen -->|"idempotent insert"| KitchenDB[("kitchen_db")]
+    Cook(["Kitchen staff"]) -->|"PATCH /tickets/..."| Kitchen
+    Kitchen -.->|"after commit"| Completed{{"topic: orders-completed"}}
+    Kitchen -.->|"failed messages"| DLT{{"topic: orders-dlt"}}
+```
+How a message flows
+`POST /orders` validates the request and, in a single transaction, saves the order and an outbox row.
+A scheduled outbox publisher reads pending rows (`FOR UPDATE SKIP LOCKED`, safe with several instances) and sends them to the `orders` topic.
+kitchen-service consumes the message and creates a ticket. A duplicate is ignored thanks to the unique `order_id`.
+A message that fails is retried, then sent to `orders-dlt`. Malformed messages skip the retries.
+When staff complete a ticket, kitchen-service publishes `OrderCompletedEvent` to `orders-completed` after the transaction commits.
 
 Platforma składa się z dwóch niezależnych mikroserwisów komunikujących się asynchronicznie za pośrednictwem brokera Kafka:
 
@@ -174,24 +251,7 @@ cd ../kitchen-service
 
 
 
-Architecture
-```mermaid
-flowchart LR
-    Client(["Kiosk client"]) -->|"POST /orders"| Kiosk["kiosk-service"]
-    Kiosk -->|"order + outbox event (one transaction)"| KioskDB[("kiosk_db")]
-    Kiosk -.->|"outbox publisher"| Orders{{"topic: orders"}}
-    Orders --> Kitchen["kitchen-service"]
-    Kitchen -->|"idempotent insert"| KitchenDB[("kitchen_db")]
-    Cook(["Kitchen staff"]) -->|"PATCH /tickets/..."| Kitchen
-    Kitchen -.->|"after commit"| Completed{{"topic: orders-completed"}}
-    Kitchen -.->|"failed messages"| DLT{{"topic: orders-dlt"}}
-```
-How a message flows
-`POST /orders` validates the request and, in a single transaction, saves the order and an outbox row.
-A scheduled outbox publisher reads pending rows (`FOR UPDATE SKIP LOCKED`, safe with several instances) and sends them to the `orders` topic.
-kitchen-service consumes the message and creates a ticket. A duplicate is ignored thanks to the unique `order_id`.
-A message that fails is retried, then sent to `orders-dlt`. Malformed messages skip the retries.
-When staff complete a ticket, kitchen-service publishes `OrderCompletedEvent` to `orders-completed` after the transaction commits.
+
 Tech stack
 Area	Technology
 Language / framework	Java 21, Spring Boot 4, Spring Data JPA (Hibernate)
@@ -307,7 +367,7 @@ MIT, see LICENSE.
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-JSONB%20%7C%20UUID-blue)
 ![Flyway](https://img.shields.io/badge/Flyway-Migrations-red)
 
-An event-driven microservices backend that handles real-time restaurant order placement from self-service kiosks and manages kitchen preparation workflows[cite: 15, 17, 51, 54]. Built with **Spring Boot 4**, **Apache Kafka**, and **PostgreSQL**, the system demonstrates production-grade reliability patterns for distributed architectures[cite: 13, 41, 42, 47, 48].
+
 
 ---
 
@@ -325,70 +385,8 @@ An event-driven microservices backend that handles real-time restaurant order pl
 
 ---
 
-## System Architecture & Event Flow
 
-The system consists of two collaborating microservices: **Kiosk Service** (handling customer order creation and outbox publishing) and **Kitchen Service** (managing kitchen tickets and preparation state transitions)[cite: 15, 17, 41, 42, 51, 54].
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client as Kiosk Client
-    participant KC as Kiosk Service<br/>(OrderController / OrderService)
-    participant KDB as Kiosk DB<br/>(PostgreSQL)
-    participant OP as OutboxPublisher<br/>(@Scheduled)
-    participant Kafka as Apache Kafka
-    participant KL as Kitchen Service<br/>(OrderPlacedListener / Service)
-    participant KTDB as Kitchen DB<br/>(PostgreSQL)
-    actor Staff as Kitchen Staff
-    participant KEP as KitchenEventPublisher<br/>(AFTER_COMMIT)
-
-    Client->>KC: POST /orders (RequestedOrder)
-    activate KC
-    KC->>KDB: Begin TX: INSERT Order, OrderItems & OutboxEvent (PENDING)
-    KDB-->>KC: Commit TX
-    KC-->>Client: 201 Created (OrderResponse + Location header)
-    deactivate KC
-
-    loop Every 500ms (Batch up to 50)
-        OP->>KDB: SELECT PENDING events (FOR UPDATE SKIP LOCKED)
-        KDB-->>OP: Pending OutboxEvents
-        alt Publish Success
-            OP->>Kafka: Publish OrderPlacedEvent to "orders" topic
-            OP->>KDB: DELETE OutboxEvent
-        else Publish Failure
-            OP->>KDB: Increment attempts (mark FAILED at maxAttempts = 10)
-        end
-    end
-
-    Kafka->>KL: Consume from "orders" topic
-    alt Valid Message
-        KL->>KTDB: INSERT INTO kitchen_tickets ON CONFLICT (order_id) DO NOTHING
-    else Invalid Payload / Retries Exhausted
-        KL->>Kafka: DeadLetterPublishingRecoverer routes to "orders-dlt"
-    end
-
-    Staff->>KL: PATCH /tickets/{ticketId}/start-preparation
-    KL->>KTDB: Update status: RECEIVED -> PREPARING
-    Staff->>KL: PATCH /tickets/{ticketId}/mark-ready
-    KL->>KTDB: Update status: PREPARING -> READY
-    Staff->>KL: PATCH /tickets/{ticketId}/complete
-    activate KL
-    KL->>KTDB: Update status: READY -> COMPLETED (Commit TX)
-    KL->>KEP: Trigger OrderCompletedEvent (TransactionPhase.AFTER_COMMIT)
-    deactivate KL
-    KEP->>Kafka: Publish OrderCompletedEvent to "orders-completed" topic
-```
-
----
-
-## Architectural & Reliability Patterns
-
-* **Transactional Outbox Pattern (`KioskService`):** Placing an order persists both the `Order` aggregate (with its `OrderItem` collection) and an `OutboxEvent` record within a single ACID database transaction, preventing dual-write inconsistencies[cite: 35, 36, 37, 41]. A scheduled worker (`OutboxPublisher`) polls the `outbox_events` table using pessimistic locking (`FOR UPDATE SKIP LOCKED`) backed by a PostgreSQL partial index (`WHERE status = 'PENDING'`), publishes events to the `orders` Kafka topic, and tracks retry attempts (`attempts`, transitioning to `FAILED` at 10 attempts)[cite: 35, 39, 42, 45].
-* **Idempotent Consumer (`kitchenservice`):** `OrderPlacedListener` processes incoming `OrderPlacedEvent` messages idempotently by executing a native PostgreSQL `INSERT INTO kitchen_tickets ... ON CONFLICT (order_id) DO NOTHING` query, safely ignoring duplicate deliveries[cite: 47, 52, 54].
-* **Dead-Letter Topic (DLT) & Retry Policy (`kitchenservice`):** `KafkaConsumerConfig` configures a `DefaultErrorHandler` with a `DeadLetterPublishingRecoverer`[cite: 48]. Transient errors are retried via `FixedBackOff` (2 retries with a 2,000 ms interval), whereas non-retryable deserialization and validation exceptions (`JacksonException`, `NullPointerException`, `IllegalArgumentException`) are immediately routed to the `orders-dlt` topic[cite: 48].
-* **Post-Commit Event Publishing (`kitchenservice`):** Completing a kitchen ticket triggers `KitchenEventPublisher` annotated with `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`, ensuring that `OrderCompletedEvent` is published to the `orders-completed` topic only after the database transaction commits[cite: 49, 54, 55].
-* **Rich Domain Models & State Machines:** Both `Order` (`CREATED` -> `PREPARING` -> `COMPLETED`) and `KitchenTicket` (`RECEIVED` -> `PREPARING` -> `READY` -> `COMPLETED`) enforce state transition invariants and throw domain exceptions (`OrderStateException`, `TicketStateException`) mapped to HTTP `409 Conflict`[cite: 4, 5, 21, 23, 36, 38, 50].
-* **Daily Sequential Order Numbering (`OrderNumberGenerator`):** Generates human-readable order numbers (`Z-001`, `Z-002`, etc.) and automatically resets the counter to `1` at midnight every day[cite: 43].
 
 ---
 
