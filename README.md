@@ -1,11 +1,15 @@
 # 🍔 Kiosk Platform – Event-Driven Microservices Platform
 
-[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/projects/jdk/21/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-6DB33F)](https://spring.io/projects/spring-boot)
-[![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-KRaft-black.svg)](https://kafka.apache.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker%20Compose-Ready-blue.svg)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+- [System Architecture & Event Flow](#%EF%B8%8F-system-architecture--event-flow)
+- [Architectural & Reliability Patterns](#-architectural--reliability-patterns)
+- [Tech Stack](#%EF%B8%8F-tech-stack)
+- [Getting Started](#-getting-started)
+- [REST API Reference](#-rest-api-reference)
+- [Apache Kafka Topics](#-apache-kafka-topics)
+- [Database Schema & Migrations](#%EF%B8%8F-database-schema--migrations)
+- [Testing & Testcontainers](#-testing--testcontainers)
+- [Error Handling (RFC 9457)](#%EF%B8%8F-error-handling-rfc-9457)
+- [License](#-license)
 
 An event-driven microservices backend handling real-time restaurant order placement from self-service kiosks and managing kitchen preparation workflows. Built with **Spring Boot 4**, **Apache Kafka (KRaft)** and **PostgreSQL 16**, the system demonstrates production-grade reliability and resilience patterns for distributed architectures.
 
