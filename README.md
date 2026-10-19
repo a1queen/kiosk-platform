@@ -1,15 +1,5 @@
 # 🍔 Kiosk Platform – Event-Driven Microservices Platform
 
-- [System Architecture & Event Flow](#%EF%B8%8F-system-architecture--event-flow)
-- [Architectural & Reliability Patterns](#-architectural--reliability-patterns)
-- [Tech Stack](#%EF%B8%8F-tech-stack)
-- [Getting Started](#-getting-started)
-- [REST API Reference](#-rest-api-reference)
-- [Apache Kafka Topics](#-apache-kafka-topics)
-- [Database Schema & Migrations](#%EF%B8%8F-database-schema--migrations)
-- [Testing & Testcontainers](#-testing--testcontainers)
-- [Error Handling (RFC 9457)](#%EF%B8%8F-error-handling-rfc-9457)
-- [License](#-license)
 
 An event-driven microservices backend handling real-time restaurant order placement from self-service kiosks and managing kitchen preparation workflows. Built with **Spring Boot 4**, **Apache Kafka (KRaft)** and **PostgreSQL 16**, the system demonstrates production-grade reliability and resilience patterns for distributed architectures.
 
@@ -26,18 +16,19 @@ An event-driven microservices backend handling real-time restaurant order placem
 
 ## 📋 Table of Contents
 
-- [System Architecture & Event Flow](#system-architecture--event-flow)
-- [Architectural & Reliability Patterns](#architectural--reliability-patterns)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [REST API Reference](#rest-api-reference)
-- [Apache Kafka Topics](#apache-kafka-topics)
-- [Database Schema & Migrations](#database-schema--migrations)
-- [Testing & Testcontainers](#testing--testcontainers)
-- [Error Handling (RFC 9457)](#error-handling-rfc-9457)
+- [System Architecture & Event Flow](#%EF%B8%8F-system-architecture--event-flow)
+- [Architectural & Reliability Patterns](#-architectural--reliability-patterns)
+- [Tech Stack](#%EF%B8%8F-tech-stack)
+- [Getting Started](#-getting-started)
+- [REST API Reference](#-rest-api-reference)
+- [Apache Kafka Topics](#-apache-kafka-topics)
+- [Database Schema & Migrations](#%EF%B8%8F-database-schema--migrations)
+- [Testing & Testcontainers](#-testing--testcontainers)
+- [Error Handling (RFC 9457)](#%EF%B8%8F-error-handling-rfc-9457)
+- [License](#-license)
 
 ---
-
+<a id="architecture"></a>
 ## 🏛️ System Architecture & Event Flow
 
 The platform consists of two collaborating microservices:
@@ -127,7 +118,7 @@ sequenceDiagram
   `OrderNumberGenerator` generates customer-facing friendly identifiers (`Z-001`, `Z-002`, etc.) and automatically resets the sequence at midnight every day.
 
 ---
-
+<a id="tech-stack"></a>
 ## 🛠️ Tech Stack
 
 | Area | Technologies |
@@ -257,7 +248,7 @@ curl -X PATCH http://localhost:8081/tickets/<ticketId>/complete
 ```
 
 ---
-
+<a id="database"></a>
 ## 🗄️ Database Schema & Migrations
 
 Both services manage their own isolated PostgreSQL schema via Flyway migrations.
@@ -299,7 +290,7 @@ cd ../kitchen-service
 > **Note:** Docker must be running when executing the complete test suite so Testcontainers can start the required Kafka and PostgreSQL containers.
 
 ---
-
+<a id="errors"></a>
 ## ⚠️ Error Handling (RFC 9457)
 
 All validation errors and domain state conflicts return standard RFC 9457 `ProblemDetail` payloads.
