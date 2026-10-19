@@ -72,48 +72,26 @@ sequenceDiagram
     deactivate KL
     KEP->>Kafka: Publish OrderCompletedEvent to "orders-completed" topic
 ```
-
----
-
-## Architectural & Reliability Patterns
-
-* **Transactional Outbox Pattern (`KioskService`):** Placing an order persists both the `Order` aggregate (with its `OrderItem` collection) and an `OutboxEvent` record within a single ACID database transaction, preventing dual-write inconsistencies. A scheduled worker (`OutboxPublisher`) polls the `outbox_events` table using pessimistic locking (`FOR UPDATE SKIP LOCKED`) backed by a PostgreSQL partial index (`WHERE status = 'PENDING'`), publishes events to the `orders` Kafka topic, and tracks retry attempts (`attempts`, transitioning to `FAILED` at 10 attempts).
-* **Idempotent Consumer (`kitchenservice`):** `OrderPlacedListener` processes incoming `OrderPlacedEvent` messages idempotently by executing a native PostgreSQL `INSERT INTO kitchen_tickets ... ON CONFLICT (order_id) DO NOTHING` query, safely ignoring duplicate deliveries.
-* **Dead-Letter Topic (DLT) & Retry Policy (`kitchenservice`):** `KafkaConsumerConfig` configures a `DefaultErrorHandler` with a `DeadLetterPublishingRecoverer`[cite: 48]. Transient errors are retried via `FixedBackOff` (2 retries with a 2,000 ms interval), whereas non-retryable deserialization and validation exceptions (`JacksonException`, `NullPointerException`, `IllegalArgumentException`) are immediately routed to the `orders-dlt` topic.
-* **Post-Commit Event Publishing (`kitchenservice`):** Completing a kitchen ticket triggers `KitchenEventPublisher` annotated with `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`, ensuring that `OrderCompletedEvent` is published to the `orders-completed` topic only after the database transaction commits.
-* **Rich Domain Models & State Machines:** Both `Order` (`CREATED` -> `PREPARING` -> `COMPLETED`) and `KitchenTicket` (`RECEIVED` -> `PREPARING` -> `READY` -> `COMPLETED`) enforce state transition invariants and throw domain exceptions (`OrderStateException`, `TicketStateException`) mapped to HTTP `409 Conflict`.
-* **Daily Sequential Order Numbering (`OrderNumberGenerator`):** Generates human-readable order numbers (`Z-001`, `Z-002`, etc.) and automatically resets the counter to `1` at midnight every day.
-
-Architecture
-```mermaid
-flowchart LR
-    Client(["Kiosk client"]) -->|"POST /orders"| Kiosk["kiosk-service"]
-    Kiosk -->|"order + outbox event (one transaction)"| KioskDB[("kiosk_db")]
-    Kiosk -.->|"outbox publisher"| Orders{{"topic: orders"}}
-    Orders --> Kitchen["kitchen-service"]
-    Kitchen -->|"idempotent insert"| KitchenDB[("kitchen_db")]
-    Cook(["Kitchen staff"]) -->|"PATCH /tickets/..."| Kitchen
-    Kitchen -.->|"after commit"| Completed{{"topic: orders-completed"}}
-    Kitchen -.->|"failed messages"| DLT{{"topic: orders-dlt"}}
-```
 How a message flows
 `POST /orders` validates the request and, in a single transaction, saves the order and an outbox row.
 A scheduled outbox publisher reads pending rows (`FOR UPDATE SKIP LOCKED`, safe with several instances) and sends them to the `orders` topic.
 kitchen-service consumes the message and creates a ticket. A duplicate is ignored thanks to the unique `order_id`.
 A message that fails is retried, then sent to `orders-dlt`. Malformed messages skip the retries.
 When staff complete a ticket, kitchen-service publishes `OrderCompletedEvent` to `orders-completed` after the transaction commits.
+---
 
-Platforma składa się z dwóch niezależnych mikroserwisów komunikujących się asynchronicznie za pośrednictwem brokera Kafka:
+## Architectural & Reliability Patterns
 
-1. **`kiosk-service`**:
-   - Odpowiada za składanie zamówień przez klientów i śledzenie ich statusu.
-   - Posiada dedykowaną bazę PostgreSQL (`kiosk_db`).
-   - Implementuje wzorzec **Transactional Outbox**, gwarantujący *At-Least-Once Delivery* bez konieczności stosowania ciężkich rozproszonych transakcji (2PC).
+* **Transactional Outbox Pattern (`KioskService`):** Placing an order persists both the `Order` aggregate (with its `OrderItem` collection) and an `OutboxEvent` record within a single ACID database transaction, preventing dual-write inconsistencies. A scheduled worker (`OutboxPublisher`) polls the `outbox_events` table using pessimistic locking (`FOR UPDATE SKIP LOCKED`) backed by a PostgreSQL partial index (`WHERE status = 'PENDING'`), publishes events to the `orders` Kafka topic, and tracks retry attempts (`attempts`, transitioning to `FAILED` at 10 attempts).
+* **Idempotent Consumer (`kitchenservice`):** `OrderPlacedListener` processes incoming `OrderPlacedEvent` messages idempotently by executing a native PostgreSQL `INSERT INTO kitchen_tickets ... ON CONFLICT (order_id) DO NOTHING` query, safely ignoring duplicate deliveries.
+* **Dead-Letter Topic (DLT) & Retry Policy (`kitchenservice`):** `KafkaConsumerConfig` configures a `DefaultErrorHandler` with a `DeadLetterPublishingRecoverer`. Transient errors are retried via `FixedBackOff` (2 retries with a 2,000 ms interval), whereas non-retryable deserialization and validation exceptions (`JacksonException`, `NullPointerException`, `IllegalArgumentException`) are immediately routed to the `orders-dlt` topic.
+* **Post-Commit Event Publishing (`kitchenservice`):** Completing a kitchen ticket triggers `KitchenEventPublisher` annotated with `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`, ensuring that `OrderCompletedEvent` is published to the `orders-completed` topic only after the database transaction commits.
+* **Rich Domain Models & State Machines:** Both `Order` (`CREATED` -> `COMPLETED`) and `KitchenTicket` (`RECEIVED` -> `PREPARING` -> `READY` -> `COMPLETED`) enforce state transition invariants and throw domain exceptions (`OrderStateException`, `TicketStateException`) mapped to HTTP `409 Conflict`.
+* **Daily Sequential Order Numbering (`OrderNumberGenerator`):** Generates human-readable order numbers (`Z-001`, `Z-002`, etc.) and automatically resets the counter to `1` at midnight every day.
 
-2. **`kitchen-service`**:
-   - Odpowiada za cykl przygotowywania posiłków w kuchni (`RECEIVED` → `PREPARING` → `READY` → `COMPLETED`).
-   - Posiada dedykowaną bazę PostgreSQL (`kitchen_db`).
-   - Implementuje wzorzec **Idempotent Consumer** (ochrona przed duplikatami) oraz publikację zdarzeń w fazie transakcyjnej **`AFTER_COMMIT`**.
+
+
+
 
 ```mermaid
 sequenceDiagram
