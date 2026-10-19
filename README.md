@@ -10,7 +10,7 @@ An event-driven microservices backend handling real-time restaurant order placem
 * **Transactional Outbox Pattern:** Atomic order creation and domain event capture in a single ACID transaction, eliminating the Dual-Write Problem on the order-placement path.
 * **Idempotent Consumer:** Incoming events are deduplicated at the database layer via PostgreSQL.
 * **Resilient Kafka Processing:** Transient errors trigger fixed-backoff retries, while non-retryable exceptions and poisoned payloads route to a Dead-Letter Topic (`orders-dlt` in `kitchen-service`, `orders-completed-dlt` in `kiosk-service`).
-* **Post-Commit Event Publishing:** Completed ticket events are emitted to Kafka strictly after the database transaction commits via `@TransactionalEventListener(phase = AFTER_COMMIT)`, so rolled-back changes never produce events. Delivery is best-effort.
+* **Post-Commit Event Publishing:** Completed ticket events are emitted to Kafka strictly after the database transaction commits via `@TransactionalEventListener(phase = AFTER_COMMIT)`, so rolled-back changes never produce events. Delivery is best-effort (see [Known Limitations](#limitations)).
 * **Database per Service:** Fully isolated PostgreSQL databases per microservice managed by versioned Flyway migrations.
 ---
 
@@ -18,6 +18,7 @@ An event-driven microservices backend handling real-time restaurant order placem
 
 - [System Architecture & Event Flow](#%EF%B8%8F-system-architecture--event-flow)
 - [Architectural & Reliability Patterns](#-architectural--reliability-patterns)
+- [Known Limitations](#limitations)
 - [Tech Stack](#%EF%B8%8F-tech-stack)
 - [Getting Started](#-getting-started)
 - [REST API Reference](#-rest-api-reference)
@@ -113,7 +114,7 @@ sequenceDiagram
 * **Dead-Letter Topic (DLT) & Retry Policy (both services):**
   Configured with `DefaultErrorHandler` and `DeadLetterPublishingRecoverer`. Transient errors are retried with a fixed backoff (2 retries, 2000 ms apart, i.e. 3 deliveries in total). Non-retryable exceptions (`JacksonException`, `NullPointerException`, `IllegalArgumentException`) bypass retries and are published directly to `<topic>-dlt`.
 * **Post-Commit Event Emission (`kitchen-service`):**
-  Order completion events trigger via `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` in `KitchenEventPublisher`. This ensures events are published only after the database transaction is fully committed, eliminating ghost/phantom events. Unlike the outbox, this path has no persistence or retry of its own.
+  Order completion events trigger via `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` in `KitchenEventPublisher`. This ensures events are published only after the database transaction is fully committed, eliminating ghost/phantom events. Unlike the outbox, this path has no persistence or retry of its own (see [Known Limitations](#limitations)).
 * **Domain State Machines:**
   * `KitchenTicket`: `RECEIVED` &rarr; `PREPARING` &rarr; `READY` &rarr; `COMPLETED`. Invalid transitions throw `TicketStateException`, mapped to HTTP `409 Conflict`.
   * `Order`: `CREATED` &rarr; `COMPLETED`, triggered only by the `orders-completed` event. The transition is idempotent and there is no REST endpoint that changes order state.
