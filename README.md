@@ -26,6 +26,7 @@ An event-driven microservices backend handling real-time restaurant order placem
 - [Database Schema & Migrations](#%EF%B8%8F-database-schema--migrations)
 - [Testing & Testcontainers](#-testing--testcontainers)
 - [Error Handling (RFC 9457)](#%EF%B8%8F-error-handling-rfc-9457)
+- [Known Limitations](#limitations)
 - [License](#-license)
 
 ---
