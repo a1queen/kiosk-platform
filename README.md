@@ -22,15 +22,15 @@ An event-driven microservices backend handling real-time restaurant order placem
 
 ## 📋 Table of Contents
 
-- [System Architecture & Event Flow](#-system-architecture--event-flow)
-- [Architectural & Reliability Patterns](#-architectural--reliability-patterns)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [REST API Reference](#-rest-api-reference)
-- [Apache Kafka Topics](#-apache-kafka-topics)
-- [Database Schema & Migrations](#-database-schema--migrations)
-- [Testing & Testcontainers](#-testing--testcontainers)
-- [Error Handling (RFC 9457)](#-error-handling-rfc-9457)
+- [System Architecture & Event Flow](#system-architecture--event-flow)
+- [Architectural & Reliability Patterns](#architectural--reliability-patterns)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [REST API Reference](#rest-api-reference)
+- [Apache Kafka Topics](#apache-kafka-topics)
+- [Database Schema & Migrations](#database-schema--migrations)
+- [Testing & Testcontainers](#testing--testcontainers)
+- [Error Handling (RFC 9457)](#error-handling-rfc-9457)
 
 ---
 
