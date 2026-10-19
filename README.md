@@ -7,20 +7,17 @@
 [![Docker](https://img.shields.io/badge/Docker%20Compose-Ready-blue.svg)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-An event-driven microservices backend handling real-time restaurant order placement from self-service kiosks and managing kitchen preparation workflows. Built with **Spring Boot 4**, **Apache Kafka (KRaft)**, and **PostgreSQL 16**, the system demonstrates production-grade reliability and resilience patterns for distributed architectures.
+An event-driven microservices backend handling real-time restaurant order placement from self-service kiosks and managing kitchen preparation workflows. Built with **Spring Boot 4**, **Apache Kafka (KRaft)** and **PostgreSQL 16**, the system demonstrates production-grade reliability and resilience patterns for distributed architectures.
 
 ---
 
 ## ⚡ Highlights
 
-* **Transactional Outbox Pattern:** Atomic order creation and domain event capture in a single ACID transaction (`FOR UPDATE SKIP LOCKED`), eliminating the Dual-Write Problem.
-* **Idempotent Consumer:** Incoming events are deduplicated at the database layer via PostgreSQL `ON CONFLICT (order_id) DO NOTHING`.
+* **Transactional Outbox Pattern:** Atomic order creation and domain event capture in a single ACID transaction, eliminating the Dual-Write Problem.
+* **Idempotent Consumer:** Incoming events are deduplicated at the database layer via PostgreSQL.
 * **Resilient Kafka Processing:** Transient errors trigger backoff retries, while non-retryable exceptions and poisoned payloads route to a Dead-Letter Topic (`orders-dlt`).
 * **Post-Commit Event Publishing:** Completed ticket events emit to Kafka strictly after database transaction commit via `@TransactionalEventListener(phase = AFTER_COMMIT)`.
 * **Database per Service:** Fully isolated PostgreSQL databases per microservice managed by versioned Flyway migrations.
-* **RFC 9457 Problem Details:** Standardized error contracts across all services for validation and domain state conflicts.
-* **Modern Integration Testing:** Spring Boot 3/4 `@ServiceConnection` with **Testcontainers** (Kafka KRaft & PostgreSQL 16).
-
 ---
 
 ## 📋 Table of Contents
@@ -40,7 +37,7 @@ An event-driven microservices backend handling real-time restaurant order placem
 ## 🏛️ System Architecture & Event Flow
 
 The platform consists of two collaborating microservices:
-1. **`kiosk-service`:** Handles customer order ingestion, daily sequential order numbering, and outbox event persistence.
+1. **`kiosk-service`:** Handles customer order creation, daily sequential order numbering, and outbox event persistence.
 2. **`kitchen-service`:** Consumes customer orders, manages preparation workflows, and notifies downstream services upon order completion.
 
 ```mermaid
@@ -134,7 +131,7 @@ sequenceDiagram
 | **Language & Framework** | Java 21, Spring Boot 4, Spring Framework |
 | **Persistence & ORM** | PostgreSQL 16, Spring Data JPA, Hibernate |
 | **Database Migrations** | Flyway (`V1__...`, `V2__...`) |
-| **Messaging & Streaming** | Apache Kafka (KRaft mode, Confluent 7.8), Spring for Apache Kafka |
+| **Messaging & Streaming** | Apache Kafka (KRaft mode), Spring for Apache Kafka |
 | **API & Documentation** | Spring Web, SpringDoc OpenAPI 3 / Swagger UI, Jakarta Validation, RFC 9457 ProblemDetail |
 | **Containerization** | Docker, Docker Compose, Kafka UI |
 | **Testing** | JUnit 5, Mockito, AssertJ, Spring MockMvc, Testcontainers |
@@ -282,27 +279,6 @@ Both services manage their own isolated PostgreSQL schema via Flyway migrations.
 ## 🧪 Testing & Testcontainers
 
 The test suite covers domain unit logic, MVC controllers, and full end-to-end integration flows.
-
-### Integration Testing with Testcontainers
-Both microservices utilize Spring Boot `@ServiceConnection` and Testcontainers to execute tests against authentic PostgreSQL and Kafka instances instead of in-memory approximations:
-
-```java
-@TestConfiguration(proxyBeanMethods = false)
-public class TestcontainersConfiguration {
-
-    @Bean
-    @ServiceConnection
-    KafkaContainer kafkaContainer() {
-        return new KafkaContainer(DockerImageName.parse("apache/kafka:3.8.0"));
-    }
-
-    @Bean
-    @ServiceConnection
-    PostgreSQLContainer postgresContainer() {
-        return new PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"));
-    }
-}
-```
 
 ### Running Tests Locally
 
