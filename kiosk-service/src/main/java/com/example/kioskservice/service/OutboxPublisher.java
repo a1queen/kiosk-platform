@@ -31,6 +31,8 @@ public class OutboxPublisher {
     @Scheduled(fixedDelayString = POLL_INTERVAL_MS)
     @Transactional
     public void publishPendingEvents() {
+        log.debug("Outbox poll on thread: {}, virtual: {}", Thread.currentThread(), Thread.currentThread().isVirtual());
+
         List<OutboxEvent> pendingEvents = outboxEventRepository.fetchPendingBatch(BATCH_SIZE);
         if (pendingEvents.isEmpty()) {
             return;
