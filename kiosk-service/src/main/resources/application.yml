@@ -44,3 +44,6 @@ spring:
         format_sql: true
   flyway:
     baseline-on-migrate: true
+  threads:
+    virtual:
+      enabled: true
