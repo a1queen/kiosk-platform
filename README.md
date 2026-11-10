@@ -351,7 +351,6 @@ Returned when an illegal state machine transition is attempted:
 ## ⚠️ Known Limitations
 
 * **Completion events are best-effort.** `kitchen-service` publishes `OrderCompletedEvent` after the transaction commits, without an outbox. If Kafka is unavailable at that moment, the failure is only logged: the ticket is `COMPLETED`, but the order in `kiosk-service` stays `CREATED`.
-* **`FAILED` outbox events are not retried automatically.** After 10 failed attempts an event stays in `outbox_events` with status `FAILED` until it is handled manually.
 * **Order numbers are not globally unique.** The counter lives in memory, so it restarts from `Z-001` after a service restart and is not shared between instances; the same number can be issued twice on one day.
 
 ---
